@@ -1,0 +1,9 @@
+language: go
+
+go:
+  - "1.6.x"
+  - "1.7.x"
+
+install:
+  - curl https://glide.sh/get | sh
+  - glide install
