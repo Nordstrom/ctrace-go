@@ -1,7 +1,6 @@
 package http
 
 import (
-	"fmt"
 	"net/http"
 
 	ctrace "github.com/Nordstrom/ctrace-go"
@@ -12,18 +11,13 @@ type responseWriter struct {
 	bytes []byte
 }
 
-func finishSpan(span opentracing.Span, r *http.Request) {
-	fmt.Print(r)
-	ctrace.HTTPStatusCode(r.Response.StatusCode).Set(span)
+func finishSpan(span opentracing.Span, w CapturingResponseWriter, r *http.Request) {
+	status := w.StatusCode()
+	span.SetTag(ctrace.HTTPStatusCodeKey, status)
 
-	if r.Response.StatusCode >= 400 {
-		ctrace.Error(true).Set(span)
-
-		var b []byte
-		n, err := r.Response.Body.Read(b)
-		if err != nil && n > 0 {
-			ctrace.ErrorDetails(string(b)).Set(span)
-		}
+	if status >= 400 {
+		span.SetTag(ctrace.ErrorKey, true)
+		span.SetTag(ctrace.ErrorDetailsKey, string(w.ResponseBody()))
 	}
 
 	span.Finish()
@@ -55,7 +49,8 @@ func TracedHandlerFunc(
 			ctrace.HTTPUrl(r.URL.String()),
 		)
 
-		defer finishSpan(span, r)
-		fn(w, r)
+		cw := NewCapturingResponseWriter(w)
+		defer finishSpan(span, cw, r)
+		fn(cw, r)
 	}
 }

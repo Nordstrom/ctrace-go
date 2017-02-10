@@ -10,9 +10,15 @@ import (
 )
 
 func handleDemoGateway(w http.ResponseWriter, r *http.Request) {
-	resp, _ := http.Get("/demo")
+	resp, err := http.Get("http://localhost:8004/demo")
+	if err != nil {
+		panic(err)
+	}
 	defer resp.Body.Close()
-	body, _ := ioutil.ReadAll(resp.Body)
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		panic(err)
+	}
 	w.Write(body)
 }
 

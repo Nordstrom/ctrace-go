@@ -12,32 +12,29 @@ type CapturingResponseWriter interface {
 
 // NewCapturingResponseWriter creates a new CapturingResponseWriter using current
 // headers as a starting point.
-func NewCapturingResponseWriter(headers http.Header) CapturingResponseWriter {
-	return &capturingResponseWriter{
-		headers:      headers,
-		statusCode:   http.StatusOK,
-		responseBody: []byte{},
-	}
+func NewCapturingResponseWriter(w http.ResponseWriter) CapturingResponseWriter {
+	return &capturingResponseWriter{writer: w}
 }
 
 type capturingResponseWriter struct {
+	writer       http.ResponseWriter
 	statusCode   int
 	responseBody []byte
-	headers      http.Header
 }
 
 func (w *capturingResponseWriter) Header() http.Header {
-	return w.headers
+	return w.writer.Header()
 }
 
 func (w *capturingResponseWriter) Write(data []byte) (int, error) {
 	w.responseBody = make([]byte, len(data))
 	copy(w.responseBody, data)
-	return len(data), nil
+	return w.writer.Write(data)
 }
 
 func (w *capturingResponseWriter) WriteHeader(code int) {
 	w.statusCode = code
+	w.writer.WriteHeader(code)
 }
 
 func (w *capturingResponseWriter) StatusCode() int {

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"net/http"
+	"net/http/httptest"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -12,12 +13,13 @@ import (
 var _ = Describe("CapturingResponseWriter", func() {
 
 	var (
-		subject CapturingResponseWriter
-		headers http.Header
+		recorder *httptest.ResponseRecorder
+		subject  CapturingResponseWriter
 	)
 
 	JustBeforeEach(func() {
-		subject = NewCapturingResponseWriter(headers)
+		recorder = httptest.NewRecorder()
+		subject = NewCapturingResponseWriter(recorder)
 	})
 
 	Describe("Write", func() {
@@ -26,17 +28,7 @@ var _ = Describe("CapturingResponseWriter", func() {
 			subject.Write(dataToWrite)
 			Expect(subject.ResponseBody()).To(Equal([]byte("first write")))
 			Expect(fmt.Sprintf("%p", subject.ResponseBody())).ToNot(Equal(fmt.Sprintf("%p", dataToWrite)))
-		})
-	})
-
-	Describe("Header", func() {
-		BeforeEach(func() {
-			headers = http.Header{}
-			headers.Add("some", "header")
-		})
-
-		It("stores the headers that are passed in", func() {
-			Expect(subject.Header()).To(Equal(headers))
+			Expect(recorder.Body.Bytes()).To(Equal([]byte("first write")))
 		})
 	})
 
