@@ -1,8 +1,8 @@
-hash: ed2317328eeea9dae66823ca688d9df372060f68d549d799b4fbc23034affd4f
-updated: 2017-01-27T14:02:18.026692201-08:00
+hash: 0ddc3638c85e3d4e192e6bc8fce632d12305f49bcf8cfa7965534489178bf755
+updated: 2017-02-07T10:17:09.635252511-08:00
 imports:
 - name: github.com/opentracing/opentracing-go
-  version: 0c3154a3c2ce79d3271985848659870599dfb77c
+  version: 6edb48674bd9467b8e91fda004f2bd7202d60ce4
   subpackages:
   - log
 - name: golang.org/x/net
@@ -14,6 +14,36 @@ testImports:
   version: 6d212800a42e8ab5c146b8ace3490ee17e5225f9
   subpackages:
   - spew
+- name: github.com/onsi/ginkgo
+  version: 462326b1628e124b23f42e87a8f2750e3c4e2d24
+  subpackages:
+  - config
+  - internal/codelocation
+  - internal/containernode
+  - internal/failer
+  - internal/leafnodes
+  - internal/remote
+  - internal/spec
+  - internal/specrunner
+  - internal/suite
+  - internal/testingtproxy
+  - internal/writer
+  - reporters
+  - reporters/stenographer
+  - types
+- name: github.com/onsi/gomega
+  version: a78ae492d53aad5a7a232d0d0462c14c400e3ee7
+  subpackages:
+  - format
+  - internal/assertion
+  - internal/asyncassertion
+  - internal/testingtsupport
+  - matchers
+  - matchers/support/goraph/bipartitegraph
+  - matchers/support/goraph/edge
+  - matchers/support/goraph/node
+  - matchers/support/goraph/util
+  - types
 - name: github.com/pmezard/go-difflib
   version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
   subpackages:

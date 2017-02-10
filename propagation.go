@@ -19,8 +19,8 @@ func injectText(
 	if !ok {
 		return opentracing.ErrInvalidCarrier
 	}
-	carrier.Set("X-Correlation-ID", strconv.FormatUint(sc.TraceID, 16))
-	carrier.Set("X-Request-ID", strconv.FormatUint(sc.SpanID, 16))
+	carrier.Set("X-Correlation-Id", strconv.FormatUint(sc.TraceID, 16))
+	carrier.Set("X-Request-Id", strconv.FormatUint(sc.SpanID, 16))
 
 	for k, v := range sc.Baggage {
 		carrier.Set("X-Baggage-"+k, v)

@@ -35,8 +35,8 @@ type spanData struct {
 
 // Implements the `Span` interface. Created via tracerImpl (see
 // `basictracer.New()`).
-type span struct {
-	tracer *tracer
+type cspan struct {
+	tracer *ctracer
 	io.Writer
 	Encoder
 
@@ -46,12 +46,12 @@ type span struct {
 }
 
 var spanPool = &sync.Pool{New: func() interface{} {
-	return &span{}
+	return &cspan{}
 }}
 
-func (s *span) start(
+func (s *cspan) start(
 	operation string,
-	t *tracer,
+	t *ctracer,
 	opts opentracing.StartSpanOptions,
 ) opentracing.Span {
 	s.tracer = t
@@ -100,14 +100,14 @@ func (s *span) start(
 	return s
 }
 
-func (s *span) SetOperationName(operationName string) opentracing.Span {
+func (s *cspan) SetOperationName(operationName string) opentracing.Span {
 	s.Lock()
 	defer s.Unlock()
 	s.data.operation = operationName
 	return s
 }
 
-func (s *span) SetTag(key string, value interface{}) opentracing.Span {
+func (s *cspan) SetTag(key string, value interface{}) opentracing.Span {
 	s.Lock()
 	defer s.Unlock()
 	if s.data.tags == nil {
@@ -117,7 +117,7 @@ func (s *span) SetTag(key string, value interface{}) opentracing.Span {
 	return s
 }
 
-func (s *span) LogKV(keyValues ...interface{}) {
+func (s *cspan) LogKV(keyValues ...interface{}) {
 	fields, err := log.InterleavedKVToFields(keyValues...)
 	if err != nil {
 		s.LogFields(log.Error(err), log.String("function", "LogKV"))
@@ -126,14 +126,14 @@ func (s *span) LogKV(keyValues ...interface{}) {
 	s.LogFields(fields...)
 }
 
-func (s *span) LogFields(fields ...log.Field) {
+func (s *cspan) LogFields(fields ...log.Field) {
 	l := opentracing.LogRecord{
 		Fields: fields,
 	}
 	s.writeLog(l)
 }
 
-func (s *span) writeLog(l opentracing.LogRecord) {
+func (s *cspan) writeLog(l opentracing.LogRecord) {
 	s.Lock()
 	defer s.Unlock()
 	if l.Timestamp.IsZero() {
@@ -143,28 +143,28 @@ func (s *span) writeLog(l opentracing.LogRecord) {
 	s.WriteLog(s, s.data)
 }
 
-func (s *span) LogEvent(event string) {
+func (s *cspan) LogEvent(event string) {
 	s.Log(opentracing.LogData{
 		Event: event,
 	})
 }
 
-func (s *span) LogEventWithPayload(event string, payload interface{}) {
+func (s *cspan) LogEventWithPayload(event string, payload interface{}) {
 	s.Log(opentracing.LogData{
 		Event:   event,
 		Payload: payload,
 	})
 }
 
-func (s *span) Log(ld opentracing.LogData) {
+func (s *cspan) Log(ld opentracing.LogData) {
 	s.writeLog(ld.ToLogRecord())
 }
 
-func (s *span) Finish() {
+func (s *cspan) Finish() {
 	s.FinishWithOptions(opentracing.FinishOptions{})
 }
 
-func (s *span) FinishWithOptions(opts opentracing.FinishOptions) {
+func (s *cspan) FinishWithOptions(opts opentracing.FinishOptions) {
 	finishTime := opts.FinishTime
 	if finishTime.IsZero() {
 		finishTime = time.Now()
@@ -189,22 +189,22 @@ func (s *span) FinishWithOptions(opts opentracing.FinishOptions) {
 	spanPool.Put(s)
 }
 
-func (s *span) Context() opentracing.SpanContext {
+func (s *cspan) Context() opentracing.SpanContext {
 	return s.data.context
 }
 
-func (s *span) Tracer() opentracing.Tracer {
+func (s *cspan) Tracer() opentracing.Tracer {
 	return s.tracer
 }
 
-func (s *span) SetBaggageItem(key, val string) opentracing.Span {
+func (s *cspan) SetBaggageItem(key, val string) opentracing.Span {
 	s.Lock()
 	defer s.Unlock()
 	s.data.context = s.data.context.WithBaggageItem(key, val)
 	return s
 }
 
-func (s *span) BaggageItem(key string) string {
+func (s *cspan) BaggageItem(key string) string {
 	s.Lock()
 	defer s.Unlock()
 	return s.data.context.Baggage[key]

@@ -97,11 +97,11 @@ func (enc *jsonEncoder) EmitFloat64(key string, value float64) {
 }
 
 func (enc *jsonEncoder) EmitObject(key string, value interface{}) {
-	// Not implemented
+	panic("EmitObject not implemented")
 }
 
 func (enc *jsonEncoder) EmitLazyLogger(value log.LazyLogger) {
-	// Not implemented
+	panic("EmitLazyLogger not implemented")
 }
 
 func (enc *jsonEncoder) Free() {
@@ -119,6 +119,7 @@ func (enc *jsonEncoder) WriteStart(sink io.Writer, d spanData) error {
 
 	enc.bytes = append(enc.bytes, enc.prefix...)
 	enc.bytes = addTags(enc.bytes, d.tags)
+	enc.bytes = addBaggage(enc.bytes, d.context.Baggage)
 	enc.bytes = addKey(enc.bytes, "log")
 	enc.bytes = append(enc.bytes, '{')
 	enc.bytes = addKeyInt(enc.bytes, "timestamp", d.start.UnixNano()/1e3)
@@ -147,6 +148,7 @@ func (enc *jsonEncoder) WriteLog(sink io.Writer, d spanData) error {
 
 	enc.bytes = append(enc.bytes, enc.prefix...)
 	enc.bytes = addTags(enc.bytes, d.tags)
+	enc.bytes = addBaggage(enc.bytes, d.context.Baggage)
 	enc.bytes = addKey(enc.bytes, "log")
 	enc.bytes = append(enc.bytes, '{')
 	enc.bytes = addKeyInt(enc.bytes, "timestamp", d.log.Timestamp.UnixNano()/1e3)
@@ -168,7 +170,33 @@ func (enc *jsonEncoder) WriteLog(sink io.Writer, d spanData) error {
 	return nil
 }
 
-func (enc *jsonEncoder) WriteFinish(sink io.Writer, data spanData) error {
+func (enc *jsonEncoder) WriteFinish(sink io.Writer, d spanData) error {
+	if sink == nil {
+		return errNilSink
+	}
+
+	enc.bytes = enc.bytes[:0]
+
+	enc.bytes = append(enc.bytes, enc.prefix...)
+	enc.bytes = addKeyInt(enc.bytes, "duration", d.duration.Nanoseconds()/1e3)
+	enc.bytes = addTags(enc.bytes, d.tags)
+	enc.bytes = addBaggage(enc.bytes, d.context.Baggage)
+	enc.bytes = addKey(enc.bytes, "log")
+	enc.bytes = append(enc.bytes, '{')
+	enc.bytes = addKeyInt(enc.bytes, "timestamp", d.finish.UnixNano()/1e3)
+	enc.bytes = addKeyValue(enc.bytes, "event", "Finish-Span")
+	enc.bytes = append(enc.bytes, '}')
+	enc.bytes = append(enc.bytes, '}', '\n')
+
+	expectedBytes := len(enc.bytes)
+	n, err := sink.Write(enc.bytes)
+
+	if err != nil {
+		return err
+	}
+	if n != expectedBytes {
+		return fmt.Errorf("incomplete write: only wrote %v of %v bytes", n, expectedBytes)
+	}
 	return nil
 }
 
@@ -176,17 +204,6 @@ func (enc *jsonEncoder) truncate() {
 	enc.prefix = enc.prefix[:0]
 	enc.bytes = enc.bytes[:0]
 }
-
-// func (enc *jsonEncoder) addKey(key string) {
-// 	last := len(enc.bytes) - 1
-// 	// At some point, we'll also want to support arrays.
-// 	if last >= 0 && enc.bytes[last] != '{' {
-// 		enc.bytes = append(enc.bytes, ',')
-// 	}
-// 	enc.bytes = append(enc.bytes, '"')
-// 	enc.safeAddString(key)
-// 	enc.bytes = append(enc.bytes, '"', ':')
-// }
 
 func (enc *jsonEncoder) addPrefix(d spanData) {
 	enc.prefix = append(enc.prefix, '{')
@@ -205,11 +222,28 @@ func addTags(bytes []byte, tags map[string]interface{}) []byte {
 	if len(tags) <= 0 {
 		return bytes
 	}
+	// sort.Strings(tags)
 	bytes = addKey(bytes, "tags")
 	bytes = append(bytes, '{')
 
 	for k, v := range tags {
 		bytes = addKeyValue(bytes, k, v)
+	}
+
+	bytes = append(bytes, '}')
+	return bytes
+}
+
+func addBaggage(bytes []byte, baggage map[string]string) []byte {
+	if len(baggage) <= 0 {
+		return bytes
+	}
+	// sort.Strings(tags)
+	bytes = addKey(bytes, "baggage")
+	bytes = append(bytes, '{')
+
+	for k, v := range baggage {
+		bytes = addKeyString(bytes, k, v)
 	}
 
 	bytes = append(bytes, '}')

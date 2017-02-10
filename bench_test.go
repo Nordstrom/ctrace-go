@@ -13,7 +13,7 @@ func BenchmarkSpan(b *testing.B) {
 	if err != nil {
 		return
 	}
-	t := New(Options{Writer: f})
+	t := NewWithOptions(Options{Writer: f})
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		parent := t.StartSpan("parent",

@@ -13,23 +13,28 @@ type Options struct {
 	Writer io.Writer
 }
 
-// New creates a customized Tracer.
-func New(opts Options) opentracing.Tracer {
+// New creates a default Tracer.
+func New() opentracing.Tracer {
+	return NewWithOptions(Options{})
+}
+
+// NewWithOptions creates a customized Tracer.
+func NewWithOptions(opts Options) opentracing.Tracer {
 	if opts.Writer == nil {
 		opts.Writer = os.Stdout
 	}
 
-	return &tracer{
+	return &ctracer{
 		options: opts,
 	}
 }
 
-// Implements the `Tracer` interface.
-type tracer struct {
+// CTrace Implements the `Tracer` interface.
+type ctracer struct {
 	options Options
 }
 
-func (t *tracer) StartSpan(
+func (t *ctracer) StartSpan(
 	operationName string,
 	opts ...opentracing.StartSpanOption,
 ) opentracing.Span {
@@ -40,15 +45,15 @@ func (t *tracer) StartSpan(
 	return t.StartSpanWithOptions(operationName, sso)
 }
 
-func (t *tracer) StartSpanWithOptions(
+func (t *ctracer) StartSpanWithOptions(
 	operationName string,
 	opts opentracing.StartSpanOptions,
 ) opentracing.Span {
-	s := spanPool.Get().(*span)
+	s := spanPool.Get().(*cspan)
 	return s.start(operationName, t, opts)
 }
 
-func (t *tracer) Inject(sc opentracing.SpanContext, format interface{}, carrier interface{}) error {
+func (t *ctracer) Inject(sc opentracing.SpanContext, format interface{}, carrier interface{}) error {
 	switch format {
 	case opentracing.TextMap, opentracing.HTTPHeaders:
 		return injectText(sc, carrier)
@@ -58,7 +63,7 @@ func (t *tracer) Inject(sc opentracing.SpanContext, format interface{}, carrier 
 	return opentracing.ErrUnsupportedFormat
 }
 
-func (t *tracer) Extract(format interface{}, carrier interface{}) (opentracing.SpanContext, error) {
+func (t *ctracer) Extract(format interface{}, carrier interface{}) (opentracing.SpanContext, error) {
 	switch format {
 	case opentracing.TextMap, opentracing.HTTPHeaders:
 		return extractText(carrier)
