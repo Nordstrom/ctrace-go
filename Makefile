@@ -3,11 +3,11 @@
 
 .PHONY: test
 test:
-	go test -v -race -cover ./...
+	go test -v -race -cover . && go test -v -race -cover ./http
 
 .PHONY: bench
 bench:
-	go test -v -run - -bench . -benchmem ./...
+	go test -run - -bench . -benchmem ./...
 
 .PHONY: lint
 lint:
@@ -18,7 +18,7 @@ lint:
 
 .PHONY: vet
 vet:
-	go vet ./...
+	go vet . && go vet ./http
 
 .PHONY: example
 example:
