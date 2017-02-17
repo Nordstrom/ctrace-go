@@ -107,6 +107,10 @@ var httpClient = &http.Client{
 }
 
 ...
-resp, err := httpClient.Get("http://some-service.com/demo")
+req, err := http.NewRequest("GET", "http://some-service.com/demo", nil)
+if err != nil {
+  panic(err)
+}
+resp, err := httpClient.Do(req.WithContext(r.Context()))
 
 ```
