@@ -26,8 +26,10 @@ Add instrumentation to the operations you want to track. This is composed primar
 First initialize the Global Tracer Singleton as early as possible.
 
 ```go
-import opentracing "github.com/opentracing/opentracing-go"
-import ctrace "github.com/Nordstrom/ctrace-go"
+import (
+  opentracing "github.com/opentracing/opentracing-go"
+  ctrace "github.com/Nordstrom/ctrace-go"
+)
 
 func main() {
     opentracing.InitGlobalTracer(
@@ -70,10 +72,19 @@ func xyz() {
 To automatically instrument incoming HTTP Requests use the TracedHandlerFunc wrapper.
 
 ```go
-import chttp "github.com/Nordstrom/ctrace-go/http"
+import (
+  opentracing "github.com/opentracing/opentracing-go"
+  log "github.com/opentracing/opentracing-go/log"
+  chttp "github.com/Nordstrom/ctrace-go/http"
+)
 
 func handleDemo(w http.ResponseWriter, r *http.Request) {
-	...
+	span := opentracing.SpanFromContext(r.Context())
+  span.LogFields(
+    log.String("event", "handling-demo"),
+    log.String("otherdata", "someotherdata"),
+  )
+  ...
 }
 
 func main() {
@@ -81,7 +92,9 @@ func main() {
 
   http.HandleFunc("/demo", chttp.TracedHandlerFunc(handleDemo))
 
-	http.ListenAndServe(":80", nil)
+  ...
+
+  http.ListenAndServe(":80", nil)
 }
 ```
 
@@ -94,6 +107,6 @@ var httpClient = &http.Client{
 }
 
 ...
-	resp, err := httpClient.Get("http://some-service.com/demo")
+resp, err := httpClient.Get("http://some-service.com/demo")
 
 ```

@@ -29,6 +29,7 @@ func (w *capturingResponseWriter) Header() http.Header {
 func (w *capturingResponseWriter) Write(data []byte) (int, error) {
 	w.responseBody = make([]byte, len(data))
 	copy(w.responseBody, data)
+	w.statusCode = 200
 	return w.writer.Write(data)
 }
 

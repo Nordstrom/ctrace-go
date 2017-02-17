@@ -15,7 +15,11 @@ var httpClient = &http.Client{
 }
 
 func handleDemoGateway(w http.ResponseWriter, r *http.Request) {
-	resp, err := httpClient.Get("http://localhost:8004/demo")
+	req, err := http.NewRequest("GET", "http://localhost:8004/demo", nil)
+	if err != nil {
+		panic(err)
+	}
+	resp, err := httpClient.Do(req.WithContext(r.Context()))
 	if err != nil {
 		panic(err)
 	}

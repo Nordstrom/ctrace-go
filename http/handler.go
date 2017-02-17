@@ -1,6 +1,7 @@
 package http
 
 import (
+	"fmt"
 	"net/http"
 
 	ctrace "github.com/Nordstrom/ctrace-go"
@@ -13,6 +14,7 @@ type responseWriter struct {
 
 func finishSpan(span opentracing.Span, w CapturingResponseWriter, r *http.Request) {
 	status := w.StatusCode()
+	fmt.Printf("status=%d\n", status)
 	span.SetTag(ctrace.HTTPStatusCodeKey, status)
 
 	if status >= 400 {
