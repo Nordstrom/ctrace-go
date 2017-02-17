@@ -24,33 +24,32 @@ func finishSpan(span opentracing.Span, w CapturingResponseWriter, r *http.Reques
 }
 
 // TracedHandler returns a http.Handler that is traced as an opentracing.Span
-func TracedHandler(
-	comp string,
-	op string,
-	handler http.Handler,
-) http.Handler {
-	return http.HandlerFunc(TracedHandlerFunc(comp, op, handler.ServeHTTP))
+func TracedHandler(handler http.Handler) http.Handler {
+	return http.HandlerFunc(TracedHandlerFunc(handler.ServeHTTP))
 }
 
 // TracedHandlerFunc returns a http.HandlerFunc that is traced as an opentracing.Span
-func TracedHandlerFunc(
-	comp string,
-	op string,
-	fn func(http.ResponseWriter, *http.Request),
-) http.HandlerFunc {
+func TracedHandlerFunc(fn func(http.ResponseWriter, *http.Request)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		span, _ := opentracing.StartSpanFromContext(
+		tracer := opentracing.GlobalTracer()
+		parentCtx, _ := tracer.Extract(
+			opentracing.HTTPHeaders,
+			opentracing.HTTPHeadersCarrier(r.Header))
+
+		span, ctx := opentracing.StartSpanFromContext(
 			r.Context(),
-			op,
+			r.Method+":"+r.URL.Path,
+			opentracing.ChildOf(parentCtx),
 			ctrace.SpanKindServer(),
-			ctrace.Component(comp),
+			ctrace.Component("http-handler"),
 			ctrace.HTTPRemoteAddr(r.RemoteAddr),
 			ctrace.HTTPMethod(r.Method),
 			ctrace.HTTPUrl(r.URL.String()),
 		)
 
-		cw := NewCapturingResponseWriter(w)
-		defer finishSpan(span, cw, r)
-		fn(cw, r)
+		ww := NewCapturingResponseWriter(w)
+		wr := r.WithContext(ctx)
+		defer finishSpan(span, ww, wr)
+		fn(ww, wr)
 	}
 }

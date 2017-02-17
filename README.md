@@ -65,3 +65,35 @@ func xyz() {
    ...
 }
 ```
+
+### Instrument Incoming HTTP Requests
+To automatically instrument incoming HTTP Requests use the TracedHandlerFunc wrapper.
+
+```go
+import chttp "github.com/Nordstrom/ctrace-go/http"
+
+func handleDemo(w http.ResponseWriter, r *http.Request) {
+	...
+}
+
+func main() {
+  ...
+
+  http.HandleFunc("/demo", chttp.TracedHandlerFunc(handleDemo))
+
+	http.ListenAndServe(":80", nil)
+}
+```
+
+### Instrument Outgoing HTTP Requests
+To automatically instrument outgoing HTTP Requests use the ctrace http.Transport.
+
+```go
+var httpClient = &http.Client{
+	Transport: chttp.NewTransporter("http-client", &http.Transport{}),
+}
+
+...
+	resp, err := httpClient.Get("http://some-service.com/demo")
+
+```
