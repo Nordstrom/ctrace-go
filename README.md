@@ -1,5 +1,5 @@
 # ctrace-go
-[![Build Status](https://travis-ci.org/Nordstrom/ctrace-go.svg?branch=master)](https://travis-ci.org/Nordstrom/ctrace-go)
+[![Build Status](https://travis-ci.org/Nordstrom/ctrace-go.svg?branch=new)](https://travis-ci.org/Nordstrom/ctrace-go)
 
 Canonical OpenTracing for GoLang
 
