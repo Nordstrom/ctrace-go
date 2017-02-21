@@ -5,5 +5,5 @@ go:
 
 install:
   - mkdir $GOPATH/bin
-  - go get glide
+  - go get github.com/Masterminds/glide
   - glide install
