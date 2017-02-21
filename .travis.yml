@@ -5,5 +5,5 @@ go:
 
 install:
   - mkdir $GOPATH/bin
-  - curl https://glide.sh/get | sh
+  - go get glide
   - glide install
