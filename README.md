@@ -1,5 +1,6 @@
 # ctrace-go
 [![Build Status](https://travis-ci.org/Nordstrom/ctrace-go.svg?branch=new)](https://travis-ci.org/Nordstrom/ctrace-go)
+[![Coverage Status](https://coveralls.io/repos/github/Nordstrom/ctrace-go/badge.svg?branch=new)](https://coveralls.io/github/Nordstrom/ctrace-go?branch=new)
 
 Canonical OpenTracing for Go
 

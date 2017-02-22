@@ -185,6 +185,13 @@ func (s *cspan) FinishWithOptions(opts opentracing.FinishOptions) {
 	s.data.duration = duration
 
 	s.WriteFinish(s, s.data)
+	if s.tracer.options.DebugAssertUseAfterFinish {
+		// This makes it much more likely to catch a panic on any subsequent
+		// operation since s.tracer is accessed on every call to `Lock`.
+		// We don't call `reset()` here to preserve the logs in the Span
+		// which are printed when the assertion triggers.
+		s.tracer = nil
+	}
 
 	spanPool.Put(s)
 }
