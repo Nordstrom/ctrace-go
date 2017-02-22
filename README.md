@@ -20,7 +20,7 @@ $ glide get github.com/Nordstrom/ctrace-go
 ```
 
 ## Usage
-Add instrumentation to the operations you want to track. This is composed primarily of using "spans" around operations of interest and adding log statements to capture useful data relevant to those operations.
+Add instrumentation to the operations you want to track.  Most of this is done by middleware.
 
 ### Singleton Initialization
 First initialize the Global Tracer Singleton as early as possible.
@@ -39,6 +39,69 @@ func main() {
     ...
 }
 ```
+
+### Instrument Incoming HTTP Requests
+To automatically instrument incoming HTTP Requests use the TracedHandlerFunc wrapper.
+
+```go
+import (
+  opentracing "github.com/opentracing/opentracing-go"
+  log "github.com/opentracing/opentracing-go/log"
+  chttp "github.com/Nordstrom/ctrace-go/http"
+)
+
+func handleDemo(w http.ResponseWriter, r *http.Request) {
+  ...
+  processDemo(r.Context())
+  ...
+}
+
+func main() {
+  ...
+
+  http.HandleFunc("/demo", chttp.TracedHandlerFunc(handleDemo))
+
+  ...
+
+  http.ListenAndServe(":80", nil)
+}
+```
+
+### Log Events
+To log events within the context of the current Span, use span.LogFields.
+
+```go
+func processDemo(ctx context.Context, data string) {
+  span := opentracing.SpanFromContext(ctx)
+  span.LogFields(
+    log.String("event", "processing-demo"),
+    log.String("data", data),
+  )
+  ...
+}
+```
+
+### Instrument Outgoing HTTP Requests
+To automatically instrument outgoing HTTP Requests use the ctrace http.Transport.
+
+```go
+var httpClient = &http.Client{
+	Transport: chttp.NewTransporter("http-client", &http.Transport{}),
+}
+
+...
+req, err := http.NewRequest("GET", "http://some-service.com/demo", nil)
+if err != nil {
+  panic(err)
+}
+resp, err := httpClient.Do(req.WithContext(r.Context()))
+
+```
+
+## Advanced Usage
+If middleware does not fully meet your needs, you can manually instrument spans
+operations of interest and adding log statements to capture useful data relevant
+to those operations.
 
 ### Creating a Span given an existing Go context.Context
 If you use `context.Context` in your application, OpenTracing's Go library will happily rely on it for Span propagation. To start a new (blocking child) `Span`, you can use `StartSpanFromContext`.
@@ -66,51 +129,4 @@ func xyz() {
    defer sp.Finish()
    ...
 }
-```
-
-### Instrument Incoming HTTP Requests
-To automatically instrument incoming HTTP Requests use the TracedHandlerFunc wrapper.
-
-```go
-import (
-  opentracing "github.com/opentracing/opentracing-go"
-  log "github.com/opentracing/opentracing-go/log"
-  chttp "github.com/Nordstrom/ctrace-go/http"
-)
-
-func handleDemo(w http.ResponseWriter, r *http.Request) {
-	span := opentracing.SpanFromContext(r.Context())
-  span.LogFields(
-    log.String("event", "handling-demo"),
-    log.String("otherdata", "someotherdata"),
-  )
-  ...
-}
-
-func main() {
-  ...
-
-  http.HandleFunc("/demo", chttp.TracedHandlerFunc(handleDemo))
-
-  ...
-
-  http.ListenAndServe(":80", nil)
-}
-```
-
-### Instrument Outgoing HTTP Requests
-To automatically instrument outgoing HTTP Requests use the ctrace http.Transport.
-
-```go
-var httpClient = &http.Client{
-	Transport: chttp.NewTransporter("http-client", &http.Transport{}),
-}
-
-...
-req, err := http.NewRequest("GET", "http://some-service.com/demo", nil)
-if err != nil {
-  panic(err)
-}
-resp, err := httpClient.Do(req.WithContext(r.Context()))
-
 ```
