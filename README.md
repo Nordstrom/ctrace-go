@@ -36,7 +36,7 @@ func main() {
         // tracing impl specific:
         ctrace.New(...),
     )
-    ...
+    // ...
 }
 ```
 
