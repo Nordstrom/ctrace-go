@@ -1,7 +1,7 @@
 # ctrace-go
 [![Build Status](https://travis-ci.org/Nordstrom/ctrace-go.svg?branch=new)](https://travis-ci.org/Nordstrom/ctrace-go)
 
-Canonical OpenTracing for GoLang
+Canonical OpenTracing for Go
 
 ## Why
 [OpenTracing](http://opentracing.io) is a young specification and for most (if not all) SDK implementations, output format and wire protocol are specific to the backend platform implementation.  ctrace attempts to decouple the format and wire protocol from the backend tracer implementation.

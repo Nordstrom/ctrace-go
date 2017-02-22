@@ -1,9 +1,14 @@
 language: go
-
+sudo: false
 go:
-  - "1.7.x"
-
+  - "1.7"
+  - "1.8"
+  - tip
 install:
-  - mkdir $GOPATH/bin
-  - go get github.com/Masterminds/glide
-  - glide install
+  - make dependencies
+script:
+  - make lint
+  - make test
+  - make bench
+after_success:
+  - make coveralls

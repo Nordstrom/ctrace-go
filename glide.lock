@@ -1,19 +1,26 @@
-hash: 0ddc3638c85e3d4e192e6bc8fce632d12305f49bcf8cfa7965534489178bf755
-updated: 2017-02-07T10:17:09.635252511-08:00
+hash: 0d7bc1ad22f3484a43d54e27d134f7544311194550e0e08285d35f9ff39dd789
+updated: 2017-02-22T10:45:27.65744352-08:00
 imports:
 - name: github.com/opentracing/opentracing-go
   version: 6edb48674bd9467b8e91fda004f2bd7202d60ce4
   subpackages:
+  - http
   - log
 - name: golang.org/x/net
   version: f2499483f923065a842d38eb4c7f1927e6fc6e6d
   subpackages:
   - context
 testImports:
-- name: github.com/davecgh/go-spew
-  version: 6d212800a42e8ab5c146b8ace3490ee17e5225f9
+- name: github.com/axw/gocov
+  version: c77561ca0c0cb1ed5d4ce4a912a75f5532566422
   subpackages:
-  - spew
+  - gocov
+- name: github.com/golang/lint
+  version: b8599f7d71e7fead76b25aeb919c0e2558672f4a
+  subpackages:
+  - golint
+- name: github.com/mattn/goveralls
+  version: 9d621f6940639bf287ecbb6f585a2c26eeba3bbe
 - name: github.com/onsi/ginkgo
   version: 462326b1628e124b23f42e87a8f2750e3c4e2d24
   subpackages:
@@ -44,11 +51,13 @@ testImports:
   - matchers/support/goraph/node
   - matchers/support/goraph/util
   - types
-- name: github.com/pmezard/go-difflib
-  version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
-  subpackages:
-  - difflib
+- name: github.com/pborman/uuid
+  version: a97ce2ca70fa5a848076093f05e639a89ca34d06
 - name: github.com/stretchr/testify
   version: 69483b4bd14f5845b5a1e55bca19e954e827f1d0
   subpackages:
   - assert
+- name: golang.org/x/tools
+  version: 219e654bb7266d3b73c4610ed24c33d12560826a
+  subpackages:
+  - cover

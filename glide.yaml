@@ -3,7 +3,7 @@ import:
 - package: github.com/opentracing/opentracing-go
   version: ^1.0.1
   subpackages:
-  - log
+  - http
 testImport:
 - package: github.com/onsi/ginkgo
   version: ^1.2.0
@@ -13,3 +13,14 @@ testImport:
   version: ^1.1.4
   subpackages:
   - assert
+- package: golang.org/x/tools
+  subpackages:
+  - cover
+- package: github.com/axw/gocov
+  subpackages:
+  - gocov
+- package: github.com/golang/lint
+  subpackages:
+  - golint
+- package: github.com/mattn/goveralls
+- package: github.com/pborman/uuid
