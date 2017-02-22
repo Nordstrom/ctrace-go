@@ -57,11 +57,11 @@ func handleDemo(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-  ...
+  // ...
 
   http.HandleFunc("/demo", chttp.TracedHandlerFunc(handleDemo))
 
-  ...
+  // ...
 
   http.ListenAndServe(":80", nil)
 }
@@ -77,7 +77,7 @@ func processDemo(ctx context.Context, data string) {
     log.String("event", "processing-demo"),
     log.String("data", data),
   )
-  ...
+  // ...
 }
 ```
 
@@ -86,16 +86,16 @@ To automatically instrument outgoing HTTP Requests use the ctrace http.Transport
 
 ```go
 var httpClient = &http.Client{
-	Transport: chttp.NewTransporter("http-client", &http.Transport{}),
+  Transport: chttp.NewTransporter("http-client", &http.Transport{}),
 }
 
-...
-req, err := http.NewRequest("GET", "http://some-service.com/demo", nil)
-if err != nil {
-  panic(err)
+func makeOutgoing(ctx context.Context) {
+  req, err := http.NewRequest("GET", "http://some-service.com/demo", nil)
+  if err != nil {
+    panic(err)
+  }
+  resp, err := httpClient.Do(req.WithContext(ctx))
 }
-resp, err := httpClient.Do(req.WithContext(r.Context()))
-
 ```
 
 ## Advanced Usage
@@ -108,14 +108,14 @@ If you use `context.Context` in your application, OpenTracing's Go library will 
 
 ```go
 func xyz(ctx context.Context, ...) {
-    ...
+    // ...
     span, ctx := opentracing.StartSpanFromContext(ctx, "operation_name")
     defer span.Finish()
     span.LogFields(
         log.String("event", "soft error"),
         log.String("type", "cache timeout"),
         log.Int("waited.millis", 1500))
-    ...
+    // ...
 }
 ```
 
@@ -124,9 +124,35 @@ It's always possible to create a "root" `Span` with no parent or other causal re
 
 ```go
 func xyz() {
-   ...
+   // ...
    sp := opentracing.StartSpan("operation_name")
    defer sp.Finish()
-   ...
+   // ...
 }
 ```
+
+## Best Practices
+The following are recommended practices for using opentracing and ctrace-go within a
+GoLang project.
+
+### Context Propagation
+Require a context.Context argument as the first parameter of every(a) API call
+
+```go
+func (h handler) HandleRequest(ctx context.Context, r MyRequest) error {
+  // ...
+}
+```
+
+Rule of thumb: because contexts are always request-scopeed, never hold a reference
+to them on a struct.  Always pass as a function parameter.
+
+a. Obviously not every function in your codebase.  You'll get a feel for the balance
+when you start writing context-aware code.
+
+### Custom Context Types
+At some point, you will be tempted to invent your own "custom" context type.
+For example to provide convenience methods, since Value() takes an interface{}
+key and returns an interface{}.
+
+You will regret it. Use extractor functions instead.
