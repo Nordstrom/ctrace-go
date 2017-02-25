@@ -97,6 +97,8 @@ func (t *tracer) startSpanWithOptions(
 	operationName string,
 	opts opentracing.StartSpanOptions,
 ) opentracing.Span {
+	t.Lock()
+	defer t.Unlock()
 	sp := t.newSpan()
 
 	// Start time.
@@ -183,8 +185,6 @@ func (t *tracer) freeSpan(sp *span) {
 }
 
 func (t *tracer) randomNumber() uint64 {
-	t.Lock()
-	defer t.Unlock()
 	return uint64(t.rng.Int63())
 }
 
