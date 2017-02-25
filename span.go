@@ -131,7 +131,7 @@ func (s *span) FinishWithOptions(opts opentracing.FinishOptions) {
 	}
 
 	s.tracer.Report(s)
-	s.tracer.freeSpan(s)
+	t := s.tracer
 	if s.tracer.options.DebugAssertUseAfterFinish {
 		// This makes it much more likely to catch a panic on any subsequent
 		// operation since s.tracer is accessed on every call to `Lock`.
@@ -139,6 +139,7 @@ func (s *span) FinishWithOptions(opts opentracing.FinishOptions) {
 		// which are printed when the assertion triggers.
 		s.tracer = nil
 	}
+	t.freeSpan(s)
 }
 
 func (s *span) Context() opentracing.SpanContext {

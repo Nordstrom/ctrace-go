@@ -169,8 +169,8 @@ func (t *tracer) Extract(format interface{}, carrier interface{}) (opentracing.S
 
 // newSpan retrieves an instance of a clean Span object.
 func (t *tracer) newSpan() *span {
-	t.Lock()
-	defer t.Unlock()
+	// t.Lock()
+	// defer t.Unlock()
 
 	sp := t.spanPool.Get().(*span)
 	sp.context = spanContext{}
@@ -182,8 +182,8 @@ func (t *tracer) newSpan() *span {
 }
 
 func (t *tracer) freeSpan(sp *span) {
-	t.Lock()
-	defer t.Unlock()
+	// t.Lock()
+	// defer t.Unlock()
 
 	t.spanPool.Put(sp)
 }
