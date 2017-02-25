@@ -1,26 +1,26 @@
 
 .DEFAULT_GOAL := test
 
+PACKAGES=$(go list ./... | grep -v /vendor/)
+
 .PHONY: test
 test:
-	go test -v -race -cover . && go test -v -race -cover ./http
+	ginkgo -cover -failOnPending -r -race --randomizeAllSpecs -randomizeSuites --trace $(PACKAGES)
 
 .PHONY: bench
 bench:
-	go test -run - -bench . -benchmem ./...
+	go test -run - -bench . -benchmem $(PACKAGES)
 
 .PHONY: lint
 lint:
-	# Ignore grep's exit code since no match returns 1.
-	-golint ./... | grep --invert-match -E '^.*\.pb\.go'
-	@
-	@! (golint ./... |grep --invert-match -E '^.*\.pb\.go' | read dummy)
+	golint $(PACKAGES)
 
 .PHONY: vet
 vet:
-	go vet . && go vet ./http
+	go vet $(PACKAGES)
 
 .PHONY: example
 example:
-	go build -o build/dapperish-example ./examples/dapperish.go
-	./build/dapperish-example
+	go build -o ./example/server ./example/server.go
+	@echo use ctrl-c to shutdown the example server
+	./example/server
