@@ -97,8 +97,6 @@ func (t *tracer) startSpanWithOptions(
 	operationName string,
 	opts opentracing.StartSpanOptions,
 ) opentracing.Span {
-	t.Lock()
-	defer t.Unlock()
 	sp := t.newSpan()
 
 	// Start time.
@@ -171,6 +169,9 @@ func (t *tracer) Extract(format interface{}, carrier interface{}) (opentracing.S
 
 // newSpan retrieves an instance of a clean Span object.
 func (t *tracer) newSpan() *span {
+	t.Lock()
+	defer t.Unlock()
+
 	sp := t.spanPool.Get().(*span)
 	sp.context = spanContext{}
 	sp.duration = -1
@@ -181,6 +182,9 @@ func (t *tracer) newSpan() *span {
 }
 
 func (t *tracer) freeSpan(sp *span) {
+	t.Lock()
+	defer t.Unlock()
+
 	t.spanPool.Put(sp)
 }
 
@@ -191,6 +195,9 @@ func (t *tracer) randomNumber() uint64 {
 // randomID generates a random trace/span ID, using tracer.random() generator.
 // It never returns 0.
 func (t *tracer) randomID() uint64 {
+	t.Lock()
+	defer t.Unlock()
+
 	val := t.randomNumber()
 	for val == 0 {
 		val = t.randomNumber()
