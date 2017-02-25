@@ -19,30 +19,30 @@ func lines(buf bytes.Buffer) []string {
 var _ = Describe("Span", func() {
 
 	var (
-		buf    bytes.Buffer
-		tracer opentracing.Tracer
-		span   opentracing.Span
-		out    map[string]interface{}
+		buf bytes.Buffer
+		trc opentracing.Tracer
+		sp  opentracing.Span
+		out map[string]interface{}
 	)
 
 	BeforeEach(func() {
 		buf.Reset()
-		tracer = NewWithOptions(Options{Writer: &buf})
-		span = tracer.StartSpan("x")
+		trc = NewWithOptions(TracerOptions{Writer: &buf})
+		sp = trc.StartSpan("x")
 		out = make(map[string]interface{})
 	})
 
 	Describe("LogFields", func() {
 		Context("without parent", func() {
 			It("outputs string value", func() {
-				span.LogFields(log.String("key_str", "value"))
+				sp.LogFields(log.String("key_str", "value"))
 				Ω(lines(buf)[1]).Should(MatchRegexp(
 					`\{"traceId":"[0-9a-f]{16}","spanId":"[0-9a-f]{16}","operation":"x",` +
 						`"start":\d+,"log":\{"timestamp":\d+,"key_str":"value"}\}`))
 			})
 
 			It("outputs uint32 value", func() {
-				span.LogFields(log.Uint32("32bit", 4294967295))
+				sp.LogFields(log.Uint32("32bit", 4294967295))
 				Ω(lines(buf)[1]).Should(MatchRegexp(
 					`{"traceId":"[0-9a-f]{16}","spanId":"[0-9a-f]{16}","operation":"x",` +
 						`"start":\d+,"log":\{"timestamp":\d+,` +
@@ -52,15 +52,15 @@ var _ = Describe("Span", func() {
 
 		Context("with parent", func() {
 			JustBeforeEach(func() {
-				sc := SpanContext{
-					TraceID: 123,
-					SpanID:  456,
+				sc := spanContext{
+					traceID: 123,
+					spanID:  456,
 				}
 				buf.Reset()
-				span = tracer.StartSpan("x", opentracing.ChildOf(sc))
+				sp = trc.StartSpan("x", opentracing.ChildOf(sc))
 			})
 			It("outputs string value", func() {
-				span.LogFields(log.String("key_str", "value"))
+				sp.LogFields(log.String("key_str", "value"))
 				Ω(lines(buf)[1]).Should(MatchRegexp(
 					`\{"traceId":"000000000000007b","spanId":"[0-9a-f]{16}","parentId":"00000000000001c8",` +
 						`"operation":"x","start":\d+,"log":\{"timestamp":\d+,"key_str":"value"}\}`))
@@ -69,19 +69,19 @@ var _ = Describe("Span", func() {
 
 		Context("with parent and Baggage", func() {
 			JustBeforeEach(func() {
-				sc := SpanContext{
-					TraceID: 123,
-					SpanID:  456,
-					Baggage: map[string]string{
+				sc := spanContext{
+					traceID: 123,
+					spanID:  456,
+					baggage: map[string]string{
 						"btag1": "bval1",
 						"btag2": "bval2",
 					},
 				}
 				buf.Reset()
-				span = tracer.StartSpan("x", opentracing.ChildOf(sc))
+				sp = trc.StartSpan("x", opentracing.ChildOf(sc))
 			})
 			It("outputs string value", func() {
-				span.LogFields(log.String("key_str", "value"))
+				sp.LogFields(log.String("key_str", "value"))
 				if err := json.Unmarshal([]byte(lines(buf)[1]), &out); err != nil {
 					Fail("Cannot unmarshal JSON")
 				}
@@ -94,7 +94,7 @@ var _ = Describe("Span", func() {
 
 	Describe("LogKV", func() {
 		It("outputs log record", func() {
-			span.LogKV("lkey1", "lval1", "lkey2", "lval2")
+			sp.LogKV("lkey1", "lval1", "lkey2", "lval2")
 			Ω(lines(buf)[1]).Should(MatchRegexp(
 				`\{"traceId":"[0-9a-f]{16}","spanId":"[0-9a-f]{16}","operation":"x",` +
 					`"start":\d+,"log":\{"timestamp":\d+,"lkey1":"lval1","lkey2":"lval2"}\}`))
@@ -103,7 +103,7 @@ var _ = Describe("Span", func() {
 
 	Describe("LogEvent", func() {
 		It("outputs log record", func() {
-			span.LogEvent("evt1")
+			sp.LogEvent("evt1")
 			Ω(lines(buf)[1]).Should(MatchRegexp(
 				`\{"traceId":"[0-9a-f]{16}","spanId":"[0-9a-f]{16}","operation":"x",` +
 					`"start":\d+,"log":\{"timestamp":\d+,"event":"evt1"}\}`))
@@ -112,8 +112,8 @@ var _ = Describe("Span", func() {
 
 	Describe("SetTag", func() {
 		It("outputs on Finish", func() {
-			span.SetTag("ftag", "fval")
-			span.Finish()
+			sp.SetTag("ftag", "fval")
+			sp.Finish()
 			Ω(lines(buf)[1]).Should(MatchRegexp(
 				`\{"traceId":"[0-9a-f]{16}","spanId":"[0-9a-f]{16}","operation":"x",` +
 					`"start":\d+,"duration":\d+,"tags":\{"ftag":"fval"},` +
@@ -123,22 +123,22 @@ var _ = Describe("Span", func() {
 
 	Describe("SetOperationName", func() {
 		It("sets data.operation", func() {
-			span.SetOperationName("newname")
-			cs := span.(*cspan)
-			Ω(cs.data.operation).Should(Equal("newname"))
+			sp.SetOperationName("newname")
+			cs := sp.(*span)
+			Ω(cs.operation).Should(Equal("newname"))
 		})
 	})
 
 	Describe("Tracer", func() {
 		It("gets tracer pointer", func() {
-			Ω(span.Tracer()).Should(Equal(tracer))
+			Ω(sp.Tracer()).Should(Equal(trc))
 		})
 	})
 
 	Describe("Finish", func() {
 		Context("without parent", func() {
 			It("outputs Finish-Span", func() {
-				span.Finish()
+				sp.Finish()
 				Ω(lines(buf)[1]).Should(MatchRegexp(
 					`\{"traceId":"[0-9a-f]{16}","spanId":"[0-9a-f]{16}","operation":"x",` +
 						`"start":\d+,"duration":\d+,"log":\{"timestamp":\d+,"event":"Finish-Span"}\}`))
@@ -147,15 +147,15 @@ var _ = Describe("Span", func() {
 
 		Context("with parent", func() {
 			JustBeforeEach(func() {
-				sc := SpanContext{
-					TraceID: 123,
-					SpanID:  456,
+				sc := spanContext{
+					traceID: 123,
+					spanID:  456,
 				}
 				buf.Reset()
-				span = tracer.StartSpan("x", opentracing.ChildOf(sc))
+				sp = trc.StartSpan("x", opentracing.ChildOf(sc))
 			})
 			It("outputs Finish-Span", func() {
-				span.Finish()
+				sp.Finish()
 				Ω(lines(buf)[1]).Should(MatchRegexp(
 					`\{"traceId":"000000000000007b","spanId":"[0-9a-f]{16}","parentId":"00000000000001c8",` +
 						`"operation":"x","start":\d+,"duration":\d+,"log":\{"timestamp":\d+,"event":"Finish-Span"}\}`))
@@ -164,19 +164,19 @@ var _ = Describe("Span", func() {
 
 		Context("with parent and Baggage", func() {
 			JustBeforeEach(func() {
-				sc := SpanContext{
-					TraceID: 123,
-					SpanID:  456,
-					Baggage: map[string]string{
+				sc := spanContext{
+					traceID: 123,
+					spanID:  456,
+					baggage: map[string]string{
 						"btag1": "bval1",
 						"btag2": "bval2",
 					},
 				}
 				buf.Reset()
-				span = tracer.StartSpan("x", opentracing.ChildOf(sc))
+				sp = trc.StartSpan("x", opentracing.ChildOf(sc))
 			})
 			It("outputs string value", func() {
-				span.Finish()
+				sp.Finish()
 				if err := json.Unmarshal([]byte(lines(buf)[1]), &out); err != nil {
 					Fail("Cannot unmarshal JSON")
 				}

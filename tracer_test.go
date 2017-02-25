@@ -15,15 +15,15 @@ import (
 var _ = Describe("Tracer", func() {
 
 	var (
-		buf    bytes.Buffer
-		tracer opentracing.Tracer
-		out    map[string]interface{}
+		buf bytes.Buffer
+		trc opentracing.Tracer
+		out map[string]interface{}
 	)
 
 	Describe("New", func() {
 		It("creates tracer with stdout writer", func() {
-			tracer = New()
-			t := tracer.(*ctracer)
+			trc = New()
+			t := trc.(*tracer)
 			Ω(t.options).ShouldNot(BeNil())
 			Ω((t.options.Writer == os.Stdout)).Should(BeTrue())
 		})
@@ -32,12 +32,12 @@ var _ = Describe("Tracer", func() {
 	Describe("StartSpan", func() {
 		JustBeforeEach(func() {
 			buf.Reset()
-			tracer = NewWithOptions(Options{Writer: &buf})
+			trc = NewWithOptions(TracerOptions{Writer: &buf})
 		})
 
 		Context("with Tags", func() {
 			It("outputs Start-Span", func() {
-				_ = tracer.StartSpan("x", opentracing.Tag{Key: "stag", Value: "sval"})
+				_ = trc.StartSpan("x", opentracing.Tag{Key: "stag", Value: "sval"})
 				Ω(buf.String()).Should(MatchRegexp(
 					"\\{\"traceId\":\"[0-9a-f]{16}\",\"spanId\":\"[0-9a-f]{16}\",\"operation\":\"x\"," +
 						"\"start\":\\d+,\"tags\":\\{\"stag\":\"sval\"\\},\"log\":\\{\"timestamp\":\\d+," +
@@ -47,7 +47,7 @@ var _ = Describe("Tracer", func() {
 
 		Context("without Tags", func() {
 			It("outputs Start-Span", func() {
-				_ = tracer.StartSpan("x")
+				_ = trc.StartSpan("x")
 				Ω(buf.String()).Should(MatchRegexp(
 					"\\{\"traceId\":\"[0-9a-f]{16}\",\"spanId\":\"[0-9a-f]{16}\",\"operation\":\"x\"," +
 						"\"start\":\\d+,\"log\":\\{\"timestamp\":\\d+,\"event\":\"Start-Span\"}\\}"))
@@ -56,11 +56,11 @@ var _ = Describe("Tracer", func() {
 
 		Context("with ChildOf", func() {
 			It("outputs Start-Span", func() {
-				sc := SpanContext{
-					TraceID: 123,
-					SpanID:  456,
+				sc := spanContext{
+					traceID: 123,
+					spanID:  456,
 				}
-				_ = tracer.StartSpan("x", opentracing.ChildOf(sc))
+				_ = trc.StartSpan("x", opentracing.ChildOf(sc))
 				Ω(buf.String()).Should(MatchRegexp(
 					`\{"traceId":"000000000000007b","spanId":"[0-9a-f]{16}","parentId":"00000000000001c8",` +
 						`"operation":"x","start":\d+,"log":\{"timestamp":\d+,"event":"Start-Span"}\}`))
@@ -70,15 +70,15 @@ var _ = Describe("Tracer", func() {
 
 		Context("with ChildOf and Baggage", func() {
 			It("outputs Start-Span Baggage", func() {
-				sc := SpanContext{
-					TraceID: 123,
-					SpanID:  456,
-					Baggage: map[string]string{
+				sc := spanContext{
+					traceID: 123,
+					spanID:  456,
+					baggage: map[string]string{
 						"btag1": "bval1",
 						"btag2": "bval2",
 					},
 				}
-				_ = tracer.StartSpan("x", opentracing.ChildOf(sc))
+				_ = trc.StartSpan("x", opentracing.ChildOf(sc))
 				if err := json.Unmarshal([]byte(buf.String()), &out); err != nil {
 					Fail("Cannot unmarshal JSON")
 				}
@@ -92,13 +92,13 @@ var _ = Describe("Tracer", func() {
 
 	Describe("Inject", func() {
 		var (
-			ctx    SpanContext
+			ctx    spanContext
 			tracer opentracing.Tracer
 		)
 		JustBeforeEach(func() {
-			ctx = SpanContext{
-				TraceID: 123,
-				SpanID:  245,
+			ctx = spanContext{
+				traceID: 123,
+				spanID:  245,
 			}
 			tracer = New()
 		})
@@ -121,7 +121,7 @@ var _ = Describe("Tracer", func() {
 
 		Context("with baggage", func() {
 			It("injects HTTP Baggage Headers", func() {
-				ctx.Baggage = map[string]string{
+				ctx.baggage = map[string]string{
 					"bagitem1": "bagval1",
 					"bagitem2": "bagval2",
 				}
@@ -132,7 +132,7 @@ var _ = Describe("Tracer", func() {
 			})
 
 			It("injects Text Map Baggage", func() {
-				ctx.Baggage = map[string]string{
+				ctx.baggage = map[string]string{
 					"bagitem1": "bagval1",
 					"bagitem2": "bagval2",
 				}
@@ -160,10 +160,10 @@ var _ = Describe("Tracer", func() {
 		Context("without baggage", func() {
 			It("extracts HTTP Headers", func() {
 				c, _ := tracer.Extract(opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(hdrs))
-				ctx := c.(SpanContext)
+				ctx := c.(spanContext)
 
-				Ω(ctx.TraceID).Should(Equal(uint64(123)))
-				Ω(ctx.SpanID).Should(Equal(uint64(245)))
+				Ω(ctx.traceID).Should(Equal(uint64(123)))
+				Ω(ctx.spanID).Should(Equal(uint64(245)))
 			})
 		})
 
@@ -173,10 +173,10 @@ var _ = Describe("Tracer", func() {
 				hdrs.Add("X-Baggage-bagitem2", "bagval2")
 
 				c, _ := tracer.Extract(opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(hdrs))
-				ctx := c.(SpanContext)
+				ctx := c.(spanContext)
 
-				Ω(ctx.Baggage["bagitem1"]).Should(Equal("bagval1"))
-				Ω(ctx.Baggage["bagitem2"]).Should(Equal("bagval2"))
+				Ω(ctx.baggage["bagitem1"]).Should(Equal("bagval1"))
+				Ω(ctx.baggage["bagitem2"]).Should(Equal("bagval2"))
 			})
 		})
 	})

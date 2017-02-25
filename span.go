@@ -1,7 +1,6 @@
 package ctrace
 
 import (
-	"io"
 	"sync"
 	"time"
 
@@ -9,8 +8,11 @@ import (
 	"github.com/opentracing/opentracing-go/log"
 )
 
-type spanData struct {
-	context SpanContext
+type span struct {
+	tracer     *tracer
+	sync.Mutex // protects the fields below
+
+	context spanContext
 
 	// The SpanID of this SpanContext's first intra-trace reference (i.e.,
 	// "parent"), or 0 if there is no parent.
@@ -31,93 +33,32 @@ type spanData struct {
 	tags map[string]interface{}
 
 	log opentracing.LogRecord
+
+	prefix []byte
 }
 
-// Implements the `Span` interface. Created via tracerImpl (see
-// `basictracer.New()`).
-type cspan struct {
-	tracer *ctracer
-	io.Writer
-	Encoder
-
-	sync.Mutex // protects the fields below
-
-	data spanData
-}
-
-var spanPool = &sync.Pool{New: func() interface{} {
-	return &cspan{}
-}}
-
-func (s *cspan) start(
-	operation string,
-	t *ctracer,
-	opts opentracing.StartSpanOptions,
-) opentracing.Span {
-	s.tracer = t
-	s.Writer = t.options.Writer
-	s.Encoder = NewJSONEncoder()
-
-	// Start time.
-	startTime := opts.StartTime
-	if startTime.IsZero() {
-		startTime = time.Now()
-	}
-
-	s.data = spanData{
-		start:     startTime,
-		operation: operation,
-		context:   SpanContext{},
-		tags:      opts.Tags,
-		duration:  -1,
-	}
-
-	// Look for a parent in the list of References.
-	//
-	// TODO: would be nice if basictracer did something with all
-	// References, not just the first one.
-	for _, ref := range opts.References {
-		refCtx := ref.ReferencedContext.(SpanContext)
-		s.data.context.TraceID = refCtx.TraceID
-		s.data.context.SpanID = randomID()
-		s.data.parentID = refCtx.SpanID
-
-		if l := len(refCtx.Baggage); l > 0 {
-			s.data.context.Baggage = make(map[string]string, l)
-			for k, v := range refCtx.Baggage {
-				s.data.context.Baggage[k] = v
-			}
-		}
-		break
-	}
-	if s.data.context.TraceID == 0 {
-		// No parent Span found; allocate new trace and span ids and determine
-		// the Sampled status.
-		s.data.context.TraceID, s.data.context.SpanID = randomID2()
-	}
-
-	s.WriteStart(s, s.data)
-	return s
-}
-
-func (s *cspan) SetOperationName(operationName string) opentracing.Span {
+func (s *span) SetOperationName(operationName string) opentracing.Span {
 	s.Lock()
 	defer s.Unlock()
-	s.data.operation = operationName
+	s.operation = operationName
 	return s
 }
 
-func (s *cspan) SetTag(key string, value interface{}) opentracing.Span {
+func (s *span) SetTag(key string, value interface{}) opentracing.Span {
 	s.Lock()
 	defer s.Unlock()
-	if s.data.tags == nil {
-		s.data.tags = make(map[string]interface{})
+	return s.setTag(key, value)
+}
+
+func (s *span) setTag(key string, value interface{}) opentracing.Span {
+	if s.tags == nil {
+		s.tags = make(map[string]interface{})
 	}
-	s.data.tags[key] = value
+	s.tags[key] = value
 	return s
 }
 
-func (s *cspan) LogKV(keyValues ...interface{}) {
+func (s *span) LogKV(keyValues ...interface{}) {
 	fields, err := log.InterleavedKVToFields(keyValues...)
 	if err != nil {
 		s.LogFields(log.Error(err), log.String("function", "LogKV"))
@@ -126,65 +67,71 @@ func (s *cspan) LogKV(keyValues ...interface{}) {
 	s.LogFields(fields...)
 }
 
-func (s *cspan) LogFields(fields ...log.Field) {
+func (s *span) LogFields(fields ...log.Field) {
 	l := opentracing.LogRecord{
 		Fields: fields,
 	}
-	s.writeLog(l)
+	s.reportLog(l)
 }
 
-func (s *cspan) writeLog(l opentracing.LogRecord) {
+func (s *span) reportLog(l opentracing.LogRecord) {
 	s.Lock()
 	defer s.Unlock()
 	if l.Timestamp.IsZero() {
 		l.Timestamp = time.Now()
 	}
-	s.data.log = l
-	s.WriteLog(s, s.data)
+	s.log = l
+	s.tracer.Report(s)
 }
 
-func (s *cspan) LogEvent(event string) {
+func (s *span) LogEvent(event string) {
 	s.Log(opentracing.LogData{
 		Event: event,
 	})
 }
 
-func (s *cspan) LogEventWithPayload(event string, payload interface{}) {
+func (s *span) LogEventWithPayload(event string, payload interface{}) {
 	s.Log(opentracing.LogData{
 		Event:   event,
 		Payload: payload,
 	})
 }
 
-func (s *cspan) Log(ld opentracing.LogData) {
-	s.writeLog(ld.ToLogRecord())
+func (s *span) Log(ld opentracing.LogData) {
+	s.reportLog(ld.ToLogRecord())
 }
 
-func (s *cspan) Finish() {
+func (s *span) Finish() {
 	s.FinishWithOptions(opentracing.FinishOptions{})
 }
 
-func (s *cspan) FinishWithOptions(opts opentracing.FinishOptions) {
+func (s *span) FinishWithOptions(opts opentracing.FinishOptions) {
 	finishTime := opts.FinishTime
 	if finishTime.IsZero() {
 		finishTime = time.Now()
 	}
-	duration := finishTime.Sub(s.data.start)
+	duration := finishTime.Sub(s.start)
 
 	s.Lock()
 	defer s.Unlock()
 
 	for _, lr := range opts.LogRecords {
-		s.writeLog(lr)
+		s.reportLog(lr)
 	}
 	for _, ld := range opts.BulkLogData {
-		s.writeLog(ld.ToLogRecord())
+		s.reportLog(ld.ToLogRecord())
 	}
 
-	s.data.finish = finishTime
-	s.data.duration = duration
+	s.finish = finishTime
+	s.duration = duration
 
-	s.WriteFinish(s, s.data)
+	s.log = opentracing.LogRecord{
+		Timestamp: finishTime,
+		Fields:    []log.Field{log.String("event", "Finish-Span")},
+	}
+
+	s.tracer.Report(s)
+	s.tracer.freeSpan(s)
 	if s.tracer.options.DebugAssertUseAfterFinish {
 		// This makes it much more likely to catch a panic on any subsequent
 		// operation since s.tracer is accessed on every call to `Lock`.
@@ -192,27 +139,25 @@ func (s *cspan) FinishWithOptions(opts opentracing.FinishOptions) {
 		// which are printed when the assertion triggers.
 		s.tracer = nil
 	}
-
-	spanPool.Put(s)
 }
 
-func (s *cspan) Context() opentracing.SpanContext {
-	return s.data.context
+func (s *span) Context() opentracing.SpanContext {
+	return s.context
 }
 
-func (s *cspan) Tracer() opentracing.Tracer {
+func (s *span) Tracer() opentracing.Tracer {
 	return s.tracer
 }
 
-func (s *cspan) SetBaggageItem(key, val string) opentracing.Span {
+func (s *span) SetBaggageItem(key, val string) opentracing.Span {
 	s.Lock()
 	defer s.Unlock()
-	s.data.context = s.data.context.WithBaggageItem(key, val)
+	s.context = s.context.WithBaggageItem(key, val)
 	return s
 }
 
-func (s *cspan) BaggageItem(key string) string {
+func (s *span) BaggageItem(key string) string {
 	s.Lock()
 	defer s.Unlock()
-	return s.data.context.Baggage[key]
+	return s.context.baggage[key]
 }

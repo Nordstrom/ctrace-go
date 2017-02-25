@@ -13,7 +13,7 @@ const op = "test"
 var _ = Describe("Concurrency", func() {
 	It("usage", func() {
 		var buf bytes.Buffer
-		tracer := NewWithOptions(Options{
+		trc := NewWithOptions(TracerOptions{
 			Writer: &buf,
 			DebugAssertSingleGoroutine: true,
 		})
@@ -25,12 +25,12 @@ var _ = Describe("Concurrency", func() {
 			go func() {
 				defer wg.Done()
 				for j := 0; j < num; j++ {
-					sp := tracer.StartSpan(op)
+					sp := trc.StartSpan(op)
 					sp.LogEvent("test event")
 					sp.SetTag("foo", "bar")
 					sp.SetBaggageItem("boo", "far")
 					sp.SetOperationName("x")
-					csp := tracer.StartSpan(
+					csp := trc.StartSpan(
 						"csp",
 						opentracing.ChildOf(sp.Context()))
 					csp.Finish()

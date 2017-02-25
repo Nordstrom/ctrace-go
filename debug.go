@@ -11,7 +11,7 @@ import (
 const debugGoroutineIDTag = "_initial_goroutine"
 
 type errAssertionFailed struct {
-	span *cspan
+	span *span
 	msg  string
 }
 
@@ -20,19 +20,19 @@ func (err *errAssertionFailed) Error() string {
 	return fmt.Sprintf("%s:\n%+v", err.msg, err.span)
 }
 
-func (s *cspan) Lock() {
+func (s *span) Lock() {
 	s.Mutex.Lock()
 	s.maybeAssertSanityLocked()
 }
 
-func (s *cspan) maybeAssertSanityLocked() {
+func (s *span) maybeAssertSanityLocked() {
 	if s.tracer == nil {
 		s.Mutex.Unlock()
 		panic(&errAssertionFailed{span: s, msg: "span used after call to Finish()"})
 	}
 	if s.tracer.options.DebugAssertSingleGoroutine {
 		startID := curGoroutineID()
-		curID, ok := s.data.tags[debugGoroutineIDTag].(uint64)
+		curID, ok := s.tags[debugGoroutineIDTag].(uint64)
 		if !ok {
 			// This is likely invoked in the context of the SetTag which sets
 			// debugGoroutineTag.

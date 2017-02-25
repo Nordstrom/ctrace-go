@@ -13,7 +13,7 @@ func BenchmarkParentChildLog(b *testing.B) {
 	if err != nil {
 		return
 	}
-	t := NewWithOptions(Options{Writer: f})
+	t := NewWithOptions(TracerOptions{Writer: f})
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		parent := t.StartSpan("parent",
@@ -47,7 +47,7 @@ func BenchmarkParent(b *testing.B) {
 	if err != nil {
 		return
 	}
-	t := NewWithOptions(Options{Writer: f})
+	t := NewWithOptions(TracerOptions{Writer: f})
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		parent := t.StartSpan("parent",
@@ -69,7 +69,7 @@ func BenchmarkChild(b *testing.B) {
 	if err != nil {
 		return
 	}
-	t := NewWithOptions(Options{Writer: f})
+	t := NewWithOptions(TracerOptions{Writer: f})
 	b.ResetTimer()
 	parent := t.StartSpan("parent",
 		SpanKindServer(),
@@ -103,7 +103,7 @@ func BenchmarkLog(b *testing.B) {
 	if err != nil {
 		return
 	}
-	t := NewWithOptions(Options{Writer: f})
+	t := NewWithOptions(TracerOptions{Writer: f})
 	b.ResetTimer()
 	parent := t.StartSpan("parent",
 		SpanKindServer(),

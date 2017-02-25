@@ -26,7 +26,7 @@ var _ = Describe("Acceptance", func() {
 
 	BeforeEach(func() {
 		buf.Reset()
-		tracer = ctrace.NewWithOptions(ctrace.Options{Writer: &buf})
+		tracer = ctrace.NewWithOptions(ctrace.TracerOptions{Writer: &buf})
 	})
 
 	Describe("Parent and Child with Standard Tags", func() {

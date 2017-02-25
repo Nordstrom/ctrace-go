@@ -8,10 +8,10 @@ import (
 )
 
 func injectText(
-	spanContext opentracing.SpanContext,
+	ctx opentracing.SpanContext,
 	opaqueCarrier interface{},
 ) error {
-	sc, ok := spanContext.(SpanContext)
+	sc, ok := ctx.(spanContext)
 	if !ok {
 		return opentracing.ErrInvalidSpanContext
 	}
@@ -19,10 +19,10 @@ func injectText(
 	if !ok {
 		return opentracing.ErrInvalidCarrier
 	}
-	carrier.Set("X-Correlation-Id", strconv.FormatUint(sc.TraceID, 16))
-	carrier.Set("X-Request-Id", strconv.FormatUint(sc.SpanID, 16))
+	carrier.Set("X-Correlation-Id", strconv.FormatUint(sc.traceID, 16))
+	carrier.Set("X-Request-Id", strconv.FormatUint(sc.spanID, 16))
 
-	for k, v := range sc.Baggage {
+	for k, v := range sc.baggage {
 		carrier.Set("X-Baggage-"+k, v)
 	}
 	return nil
@@ -72,9 +72,9 @@ func extractText(
 		return nil, opentracing.ErrSpanContextCorrupted
 	}
 
-	return SpanContext{
-		TraceID: traceID,
-		SpanID:  spanID,
-		Baggage: decodedBaggage,
+	return spanContext{
+		traceID: traceID,
+		spanID:  spanID,
+		baggage: decodedBaggage,
 	}, nil
 }

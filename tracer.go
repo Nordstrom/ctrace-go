@@ -2,14 +2,28 @@ package ctrace
 
 import (
 	"io"
+	"math/rand"
 	"os"
+	"sync"
+	"time"
 
 	opentracing "github.com/opentracing/opentracing-go"
+	"github.com/opentracing/opentracing-go/log"
 )
 
-// Options allows creating a customized Tracer via NewWithOptions. The object
+// tracer Implements the `Tracer` interface.
+type tracer struct {
+	options TracerOptions
+	SpanReporter
+	spanPool *sync.Pool
+	rng      *rand.Rand
+	sync.Mutex
+}
+
+// TracerOptions allows creating a customized Tracer via NewWithOptions. The object
 // must not be updated when there is an active tracer using it.
-type Options struct {
+type TracerOptions struct {
+	// Reporter
 	// Writer is used to write serialized trace events.  It defaults to os.Stdout.
 	Writer io.Writer
 	// DebugAssertSingleGoroutine internally records the ID of the goroutine
@@ -51,26 +65,24 @@ type Options struct {
 
 // New creates a default Tracer.
 func New() opentracing.Tracer {
-	return NewWithOptions(Options{})
+	return NewWithOptions(TracerOptions{})
 }
 
 // NewWithOptions creates a customized Tracer.
-func NewWithOptions(opts Options) opentracing.Tracer {
+func NewWithOptions(opts TracerOptions) opentracing.Tracer {
 	if opts.Writer == nil {
 		opts.Writer = os.Stdout
 	}
 
-	return &ctracer{
-		options: opts,
+	return &tracer{
+		options:      opts,
+		SpanReporter: NewSpanReporter(opts.Writer, NewSpanEncoder()),
+		spanPool:     &sync.Pool{New: func() interface{} { return &span{} }},
+		rng:          rand.New(rand.NewSource(time.Now().UnixNano())),
 	}
 }
 
-// CTrace Implements the `Tracer` interface.
-type ctracer struct {
-	options Options
-}
-
-func (t *ctracer) StartSpan(
+func (t *tracer) StartSpan(
 	operationName string,
 	opts ...opentracing.StartSpanOption,
 ) opentracing.Span {
@@ -78,18 +90,64 @@ func (t *ctracer) StartSpan(
 	for _, o := range opts {
 		o.Apply(&sso)
 	}
-	return t.StartSpanWithOptions(operationName, sso)
+	return t.startSpanWithOptions(operationName, sso)
 }
 
-func (t *ctracer) StartSpanWithOptions(
+func (t *tracer) startSpanWithOptions(
 	operationName string,
 	opts opentracing.StartSpanOptions,
 ) opentracing.Span {
-	s := spanPool.Get().(*cspan)
-	return s.start(operationName, t, opts)
+	sp := t.newSpan()
+
+	// Start time.
+	startTime := opts.StartTime
+	if startTime.IsZero() {
+		startTime = time.Now()
+	}
+
+	sp.tracer = t
+	sp.start = startTime
+	sp.operation = operationName
+	sp.tags = opts.Tags
+	sp.log = opentracing.LogRecord{
+		Timestamp: startTime,
+		Fields:    []log.Field{log.String("event", "Start-Span")},
+	}
+
+	if t.options.DebugAssertSingleGoroutine {
+		sp.setTag(debugGoroutineIDTag, curGoroutineID())
+	}
+
+	// Look for a parent in the list of References.
+	//
+	// TODO: would be nice if basictracer did something with all
+	// References, not just the first one.
+	for _, ref := range opts.References {
+		refCtx := ref.ReferencedContext.(spanContext)
+		sp.context.traceID = refCtx.traceID
+		sp.context.spanID = t.randomID()
+		sp.parentID = refCtx.spanID
+
+		if l := len(refCtx.baggage); l > 0 {
+			sp.context.baggage = make(map[string]string, l)
+			for k, v := range refCtx.baggage {
+				sp.context.baggage[k] = v
+			}
+		}
+		break
+	}
+	if sp.context.traceID == 0 {
+		// No parent Span found; allocate new trace and span ids and determine
+		// the Sampled status.
+		sp.context.traceID = t.randomID()
+		sp.context.spanID = sp.context.traceID
+	}
+
+	t.Report(sp)
+	return sp
 }
 
-func (t *ctracer) Inject(sc opentracing.SpanContext, format interface{}, carrier interface{}) error {
+func (t *tracer) Inject(sc opentracing.SpanContext, format interface{}, carrier interface{}) error {
 	switch format {
 	case opentracing.TextMap, opentracing.HTTPHeaders:
 		return injectText(sc, carrier)
@@ -99,7 +157,7 @@ func (t *ctracer) Inject(sc opentracing.SpanContext, format interface{}, carrier
 	return opentracing.ErrUnsupportedFormat
 }
 
-func (t *ctracer) Extract(format interface{}, carrier interface{}) (opentracing.SpanContext, error) {
+func (t *tracer) Extract(format interface{}, carrier interface{}) (opentracing.SpanContext, error) {
 	switch format {
 	case opentracing.TextMap, opentracing.HTTPHeaders:
 		return extractText(carrier)
@@ -107,4 +165,35 @@ func (t *ctracer) Extract(format interface{}, carrier interface{}) (opentracing.
 		return nil, opentracing.ErrUnsupportedFormat
 	}
 	return nil, opentracing.ErrUnsupportedFormat
+}
+
+// newSpan retrieves an instance of a clean Span object.
+func (t *tracer) newSpan() *span {
+	sp := t.spanPool.Get().(*span)
+	sp.context = spanContext{}
+	sp.duration = -1
+	sp.tracer = nil
+	sp.tags = nil
+	sp.prefix = nil
+	return sp
+}
+
+func (t *tracer) freeSpan(sp *span) {
+	t.spanPool.Put(sp)
+}
+
+func (t *tracer) randomNumber() uint64 {
+	t.Lock()
+	defer t.Unlock()
+	return uint64(t.rng.Int63())
+}
+
+// randomID generates a random trace/span ID, using tracer.random() generator.
+// It never returns 0.
+func (t *tracer) randomID() uint64 {
+	val := t.randomNumber()
+	for val == 0 {
+		val = t.randomNumber()
+	}
+	return val
 }
