@@ -157,3 +157,6 @@ For example to provide convenience methods, since Value() takes an interface{}
 key and returns an interface{}.
 
 You will regret it. Use extractor functions instead.
+
+## Contributing
+Please see the [contributing guide](CONTRIBUTING.md) for details on contributing to ctrace-go.

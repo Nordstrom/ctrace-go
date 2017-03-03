@@ -7,7 +7,8 @@ import (
 )
 
 // jsonEncoder is a fast / lite json encoder with just enough functionality to
-// support the span and log encoders.
+// support the span and log encoders.  It is the default (and at present only)
+// encoding supported by ctrace.
 type jsonEncoder struct{}
 
 func (enc *jsonEncoder) encodeKeyString(bytes []byte, key, val string) []byte {

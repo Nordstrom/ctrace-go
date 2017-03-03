@@ -1,9 +1,11 @@
-package ctrace
+package ext
 
 import (
 	opentracing "github.com/opentracing/opentracing-go"
 )
 
+// Tag keys (and values) for standard and recommended tags a given here.  This
+// is to supplement and improve on the [Standard Tags](https://github.com/opentracing/opentracing-go/blob/master/ext/tags.go)
 const (
 	// SpanKindKey is the SpanKind tag key
 	SpanKindKey = "span.kind"
@@ -21,6 +23,27 @@ const (
 	// ComponentKey is the tag key for a low-cardinality identifier of the module,
 	// library, or package that is generating a span.
 	ComponentKey = "component"
+
+	//////////////////////////////////////////////////////////////////////
+	// Db keys
+	//////////////////////////////////////////////////////////////////////
+
+	// DbInstanceKey is the tag key for a Database instance name. E.g., In java, if the
+	// jdbc.url="jdbc:mysql://127.0.0.1:3306/customers", the instance name is "customers".
+	DbInstanceKey = "db.instance"
+
+	// DbStatementKey is the tag key for a database statement for the given database
+	// type. E.g., for db.type="SQL", "SELECT * FROM wuser_table"; for db.type="redis",
+	// "SET mykey 'WuValue'".
+	DbStatementKey = "db.statement"
+
+	// DbTypeKey is the tag key for a Database type. For any SQL database, "sql". For others,
+	// the lower-case database category, e.g. "cassandra", "hbase", or "redis".
+	DbTypeKey = "db.type"
+
+	// DbUserKey is the tag key for a Username for accessing database. E.g.,
+	// "readonly_user" or "reporting_user"
+	DbUserKey = "db.user"
 
 	//////////////////////////////////////////////////////////////////////
 	// Peer tag keys. These tags can be emitted by either client-side of
@@ -78,10 +101,6 @@ const (
 
 	// HTTPUserAgentKey is the key for the UserAgent tag
 	HTTPUserAgentKey = "http.user_agent"
-
-	// ErrorDetailsKey is a key for a tag containing the string representation of
-	// the error message, stack trace, in cases where error=true
-	ErrorDetailsKey = "error_details"
 )
 
 var (
@@ -98,6 +117,27 @@ var (
 	// Component is a low-cardinality identifier of the module, library,
 	// or package that is generating a span.
 	Component = stringTagName(ComponentKey)
+
+	//////////////////////////////////////////////////////////////////////
+	// Db keys
+	//////////////////////////////////////////////////////////////////////
+
+	// DbInstance is the tag for a Database instance name. E.g., In java, if the
+	// jdbc.url="jdbc:mysql://127.0.0.1:3306/customers", the instance name is "customers".
+	DbInstance = stringTagName(DbInstanceKey)
+
+	// DbStatement is the tag for a database statement for the given database
+	// type. E.g., for db.type="SQL", "SELECT * FROM wuser_table"; for db.type="redis",
+	// "SET mykey 'WuValue'".
+	DbStatement = stringTagName(DbStatementKey)
+
+	// DbType is the tag for a Database type. For any SQL database, "sql". For others,
+	// the lower-case database category, e.g. "cassandra", "hbase", or "redis".
+	DbType = stringTagName(DbTypeKey)
+
+	// DbUser is the tag for a Username for accessing database. E.g.,
+	// "readonly_user" or "reporting_user"
+	DbUser = stringTagName(DbUserKey)
 
 	//////////////////////////////////////////////////////////////////////
 	// Peer tags. These tags can be emitted by either client-side of
@@ -151,10 +191,6 @@ var (
 
 	// HTTPUserAgent is the
 	HTTPUserAgent = stringTagName(HTTPUserAgentKey)
-
-	// ErrorDetails is a string representation of the error message, stack trace,
-	// in cases where error=true
-	ErrorDetails = stringTagName(ErrorDetailsKey)
 )
 
 func spanKindTag(k string, v string) func() opentracing.Tag {

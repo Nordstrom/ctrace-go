@@ -24,16 +24,15 @@ func (c spanContext) ForeachBaggageItem(handler func(k, v string) bool) {
 // WithBaggageItem returns an entirely new basictracer SpanContext with the
 // given key:value baggage pair set.
 func (c spanContext) WithBaggageItem(key, val string) spanContext {
-	var newBaggage map[string]string
 	if c.baggage == nil {
-		newBaggage = map[string]string{key: val}
-	} else {
-		newBaggage = make(map[string]string, len(c.baggage)+1)
-		for k, v := range c.baggage {
-			newBaggage[k] = v
-		}
-		newBaggage[key] = val
+		return spanContext{c.traceID, c.spanID, map[string]string{key: val}}
 	}
+	var newBaggage = make(map[string]string, len(c.baggage)+1)
+	for k, v := range c.baggage {
+		newBaggage[k] = v
+	}
+	newBaggage[key] = val
+
 	// Use positional parameters so the compiler will help catch new fields.
 	return spanContext{c.traceID, c.spanID, newBaggage}
 }

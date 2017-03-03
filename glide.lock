@@ -1,11 +1,15 @@
-hash: 0d7bc1ad22f3484a43d54e27d134f7544311194550e0e08285d35f9ff39dd789
-updated: 2017-02-22T10:45:27.65744352-08:00
+hash: 1b19039a38f80f66116f7dfee56af90ca573c78c0af7fa406ee79191b70179d3
+updated: 2017-03-02T16:49:05.941177361-08:00
 imports:
+- name: github.com/felixge/httpsnoop
+  version: 287b56e9e314227d3113c7c6b434d31aec68089d
 - name: github.com/opentracing/opentracing-go
   version: 6edb48674bd9467b8e91fda004f2bd7202d60ce4
   subpackages:
+  - ext
   - http
   - log
+  - mocktracer
 - name: golang.org/x/net
   version: f2499483f923065a842d38eb4c7f1927e6fc6e6d
   subpackages:
@@ -58,6 +62,6 @@ testImports:
   subpackages:
   - assert
 - name: golang.org/x/tools
-  version: 219e654bb7266d3b73c4610ed24c33d12560826a
+  version: f5a6ee1ea9f7b3a91e3e70dc1b9706886d0e0ae3
   subpackages:
   - cover

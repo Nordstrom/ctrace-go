@@ -4,6 +4,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/Nordstrom/ctrace-go/ext"
 	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/log"
 )
@@ -17,22 +18,22 @@ func BenchmarkParentChildLog(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		parent := t.StartSpan("parent",
-			SpanKindServer(),
-			Component("component"),
-			PeerHostname("hostname"),
-			PeerHostIPv6("ip"),
-			HTTPMethod("method"),
-			HTTPUrl("https://some.url.outthere.com"),
+			ext.SpanKindServer(),
+			ext.Component("component"),
+			ext.PeerHostname("hostname"),
+			ext.PeerHostIPv6("ip"),
+			ext.HTTPMethod("method"),
+			ext.HTTPUrl("https://some.url.outthere.com"),
 		)
 
 		child := t.StartSpan("child",
 			opentracing.ChildOf(parent.Context()),
-			SpanKindServer(),
-			Component("child-component"),
-			PeerHostname("hostname"),
-			PeerHostIPv6("ip"),
-			HTTPMethod("method"),
-			HTTPUrl("https://some.url.outthere.com"),
+			ext.SpanKindServer(),
+			ext.Component("child-component"),
+			ext.PeerHostname("hostname"),
+			ext.PeerHostIPv6("ip"),
+			ext.HTTPMethod("method"),
+			ext.HTTPUrl("https://some.url.outthere.com"),
 		)
 
 		child.LogFields(log.String("event", "event"))
@@ -51,12 +52,12 @@ func BenchmarkParent(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		parent := t.StartSpan("parent",
-			SpanKindServer(),
-			Component("component"),
-			PeerHostname("hostname"),
-			PeerHostIPv6("ip"),
-			HTTPMethod("method"),
-			HTTPUrl("https://some.url.outthere.com"),
+			ext.SpanKindServer(),
+			ext.Component("component"),
+			ext.PeerHostname("hostname"),
+			ext.PeerHostIPv6("ip"),
+			ext.HTTPMethod("method"),
+			ext.HTTPUrl("https://some.url.outthere.com"),
 		)
 
 		parent.Finish()
@@ -72,23 +73,23 @@ func BenchmarkChild(b *testing.B) {
 	t := NewWithOptions(TracerOptions{Writer: f})
 	b.ResetTimer()
 	parent := t.StartSpan("parent",
-		SpanKindServer(),
-		Component("component"),
-		PeerHostname("hostname"),
-		PeerHostIPv6("ip"),
-		HTTPMethod("method"),
-		HTTPUrl("https://some.url.outthere.com"),
+		ext.SpanKindServer(),
+		ext.Component("component"),
+		ext.PeerHostname("hostname"),
+		ext.PeerHostIPv6("ip"),
+		ext.HTTPMethod("method"),
+		ext.HTTPUrl("https://some.url.outthere.com"),
 	)
 
 	for i := 0; i < b.N; i++ {
 		child := t.StartSpan("child",
 			opentracing.ChildOf(parent.Context()),
-			SpanKindServer(),
-			Component("child-component"),
-			PeerHostname("hostname"),
-			PeerHostIPv6("ip"),
-			HTTPMethod("method"),
-			HTTPUrl("https://some.url.outthere.com"),
+			ext.SpanKindServer(),
+			ext.Component("child-component"),
+			ext.PeerHostname("hostname"),
+			ext.PeerHostIPv6("ip"),
+			ext.HTTPMethod("method"),
+			ext.HTTPUrl("https://some.url.outthere.com"),
 		)
 
 		child.Finish()
@@ -106,12 +107,12 @@ func BenchmarkLog(b *testing.B) {
 	t := NewWithOptions(TracerOptions{Writer: f})
 	b.ResetTimer()
 	parent := t.StartSpan("parent",
-		SpanKindServer(),
-		Component("component"),
-		PeerHostname("hostname"),
-		PeerHostIPv6("ip"),
-		HTTPMethod("method"),
-		HTTPUrl("https://some.url.outthere.com"),
+		ext.SpanKindServer(),
+		ext.Component("component"),
+		ext.PeerHostname("hostname"),
+		ext.PeerHostIPv6("ip"),
+		ext.HTTPMethod("method"),
+		ext.HTTPUrl("https://some.url.outthere.com"),
 	)
 	for i := 0; i < b.N; i++ {
 		parent.LogFields(log.String("event", "event"))

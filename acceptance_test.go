@@ -7,6 +7,7 @@ import (
 	"time"
 
 	ctrace "github.com/Nordstrom/ctrace-go"
+	"github.com/Nordstrom/ctrace-go/ext"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -39,31 +40,31 @@ var _ = Describe("Acceptance", func() {
 		BeforeEach(func() {
 			timestamp = time.Now().UnixNano() / 1e3
 			parent := tracer.StartSpan("parent",
-				ctrace.SpanKindClient(),
-				ctrace.Component("component"),
-				ctrace.PeerHostname("hostname"),
-				ctrace.PeerHostIPv6("ip"),
-				ctrace.HTTPMethod("method"),
-				ctrace.HTTPUrl("https://some.url.outthere.com"),
+				ext.SpanKindClient(),
+				ext.Component("component"),
+				ext.PeerHostname("hostname"),
+				ext.PeerHostIPv6("ip"),
+				ext.HTTPMethod("method"),
+				ext.HTTPUrl("https://some.url.outthere.com"),
 			)
 
 			child := tracer.StartSpan("child",
 				opentracing.ChildOf(parent.Context()),
-				ctrace.SpanKindServer(),
-				ctrace.Component("child-component"),
-				ctrace.PeerService("service"),
-				ctrace.PeerPort(80),
-				ctrace.PeerHostname("hostname"),
-				ctrace.PeerHostIPv4(123),
-				ctrace.PeerHostIPv6("ip"),
-				ctrace.HTTPMethod("method"),
-				ctrace.HTTPUrl("https://some.url.outthere.com"),
+				ext.SpanKindServer(),
+				ext.Component("child-component"),
+				ext.PeerService("service"),
+				ext.PeerPort(80),
+				ext.PeerHostname("hostname"),
+				ext.PeerHostIPv4(123),
+				ext.PeerHostIPv6("ip"),
+				ext.HTTPMethod("method"),
+				ext.HTTPUrl("https://some.url.outthere.com"),
 			)
 
-			child.SetTag(ctrace.HTTPStatusCodeKey, 200)
+			child.SetTag(ext.HTTPStatusCodeKey, 200)
 			child.Finish()
 
-			parent.SetTag(ctrace.HTTPStatusCodeKey, 200)
+			parent.SetTag(ext.HTTPStatusCodeKey, 200)
 			parent.Finish()
 			lines = strings.Split(buf.String(), "\n")
 			out = make(map[string]interface{})
