@@ -51,11 +51,13 @@ var _ = Describe("SpanEncoder", func() {
 				tags: map[string]interface{}{
 					"key1": "val1",
 				},
-				log: opentracing.LogRecord{
-					Timestamp: time.Now(),
-					Fields: []log.Field{
-						log.String("event", "evt1"),
-						log.Int("key1", 99),
+				logs: []opentracing.LogRecord{
+					opentracing.LogRecord{
+						Timestamp: time.Now(),
+						Fields: []log.Field{
+							log.String("event", "evt1"),
+							log.Int("key1", 99),
+						},
 					},
 				},
 			}
@@ -65,7 +67,7 @@ var _ = Describe("SpanEncoder", func() {
 					`"operation":"op","start":\d{16},"duration":35,` +
 					`"tags":\{"key1":"val1"\},` +
 					`"baggage":\{"bkey1":"bval1"\},` +
-					`"log":\{"timestamp":\d{16},"event":"evt1","key1":99\}\}`))
+					`"logs":\[\{"timestamp":\d{16},"event":"evt1","key1":99\}\]\}`))
 
 		})
 	})

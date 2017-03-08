@@ -44,7 +44,7 @@ func (enc *spanEncoder) Encode(osp opentracing.Span) []byte {
 	}
 	bytes = enc.encodeTags(bytes, sp.tags)
 	bytes = enc.encodeBaggage(bytes, sp.context.baggage)
-	bytes = enc.encodeLog(bytes, sp.log)
+	bytes = enc.encodeLogs(bytes, sp.logs)
 	bytes = append(bytes, '}', '\n')
 
 	return bytes
@@ -104,16 +104,29 @@ func (enc *spanEncoder) encodeBaggage(
 	return bytes
 }
 
-func (enc *spanEncoder) encodeLog(bytes []byte, log opentracing.LogRecord) []byte {
-	if log.Timestamp.IsZero() {
+func (enc *spanEncoder) encodeLogs(bytes []byte, logs []opentracing.LogRecord) []byte {
+	if logs == nil || len(logs) <= 0 {
 		return bytes
 	}
-	bytes = enc.encodeKey(bytes, "log")
-	bytes = append(bytes, '{')
-	bytes = enc.encodeKeyInt(bytes, "timestamp", log.Timestamp.UnixNano()/1e3)
-	for _, f := range log.Fields {
-		bytes = enc.encodeKeyValue(bytes, f.Key(), f.Value())
+	bytes = enc.encodeKey(bytes, "logs")
+	bytes = append(bytes, '[')
+	addComma := false
+	for _, log := range logs {
+		if log.Timestamp.IsZero() {
+			continue
+		}
+		if addComma {
+			bytes = append(bytes, ',')
+		} else {
+			addComma = true
+		}
+		bytes = append(bytes, '{')
+		bytes = enc.encodeKeyInt(bytes, "timestamp", log.Timestamp.UnixNano()/1e3)
+		for _, f := range log.Fields {
+			bytes = enc.encodeKeyValue(bytes, f.Key(), f.Value())
+		}
+		bytes = append(bytes, '}')
 	}
-	bytes = append(bytes, '}')
+	bytes = append(bytes, ']')
 	return bytes
 }

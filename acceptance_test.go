@@ -27,7 +27,7 @@ var _ = Describe("Acceptance", func() {
 
 	BeforeEach(func() {
 		buf.Reset()
-		tracer = ctrace.NewWithOptions(ctrace.TracerOptions{Writer: &buf})
+		tracer = ctrace.NewWithOptions(ctrace.TracerOptions{Writer: &buf, MultiEvent: true})
 	})
 
 	Describe("Parent and Child with Standard Tags", func() {
@@ -90,7 +90,8 @@ var _ = Describe("Acceptance", func() {
 					"span.kind":     "client"},
 			))
 
-			log := out["log"].(map[string]interface{})
+			logs := out["logs"].([]interface{})
+			log := (logs[0]).(map[string]interface{})
 			Ω(int64(log["timestamp"].(float64))).Should(BeNumerically(">=", timestamp))
 			Ω(log["event"]).Should(Equal("Start-Span"))
 		})
@@ -118,7 +119,8 @@ var _ = Describe("Acceptance", func() {
 					"span.kind":     "server"},
 			))
 
-			log := out["log"].(map[string]interface{})
+			logs := out["logs"].([]interface{})
+			log := (logs[0]).(map[string]interface{})
 			Ω(int64(log["timestamp"].(float64))).Should(BeNumerically(">=", timestamp))
 			Ω(log["event"]).Should(Equal("Start-Span"))
 		})
@@ -148,7 +150,8 @@ var _ = Describe("Acceptance", func() {
 					"span.kind":        "server"},
 			))
 
-			log := out["log"].(map[string]interface{})
+			logs := out["logs"].([]interface{})
+			log := (logs[0]).(map[string]interface{})
 			Ω(int64(log["timestamp"].(float64))).Should(BeNumerically(">=", timestamp))
 			Ω(int64(log["timestamp"].(float64))).Should(BeNumerically(">=", int64(out["start"].(float64))))
 			Ω(log["event"]).Should(Equal("Finish-Span"))
@@ -176,7 +179,8 @@ var _ = Describe("Acceptance", func() {
 					"span.kind":        "client"},
 			))
 
-			log := out["log"].(map[string]interface{})
+			logs := out["logs"].([]interface{})
+			log := (logs[0]).(map[string]interface{})
 			Ω(int64(log["timestamp"].(float64))).Should(BeNumerically(">=", timestamp))
 			Ω(int64(log["timestamp"].(float64))).Should(BeNumerically(">=", int64(out["start"].(float64))))
 			Ω(log["event"]).Should(Equal("Finish-Span"))

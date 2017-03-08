@@ -18,12 +18,21 @@ type tracer struct {
 	spanPool *sync.Pool
 	rng      *rand.Rand
 	sync.Mutex
+	textMapPropagator     *textMapPropagator
+	httpHeadersPropagator *textMapPropagator
 }
 
 // TracerOptions allows creating a customized Tracer via NewWithOptions. The object
 // must not be updated when there is an active tracer using it.
 type TracerOptions struct {
-	// Reporter
+	// MultiEvent tells whether the tracer outputs in Single-Event or Multi-Event Mode.
+	// See [Canonical Events](https://github.com/Nordstrom/ctrace/tree/new#canonical-events).
+	// If MultiEvent=true, the tracer is using Multi-Event Mode which means Start-Span, Log,
+	// and Finish-Span events are output with each containing a single log.
+	// If MultiEvent=false (default), the tracer is using Single-Event Mode which
+	// means only Finish-Span events are output with a collectionn of all logs for that Span.
+	MultiEvent bool
+
 	// Writer is used to write serialized trace events.  It defaults to os.Stdout.
 	Writer io.Writer
 	// DebugAssertSingleGoroutine internally records the ID of the goroutine
@@ -75,10 +84,12 @@ func NewWithOptions(opts TracerOptions) opentracing.Tracer {
 	}
 
 	return &tracer{
-		options:      opts,
-		SpanReporter: NewSpanReporter(opts.Writer, NewSpanEncoder()),
-		spanPool:     &sync.Pool{New: func() interface{} { return &span{} }},
-		rng:          rand.New(rand.NewSource(time.Now().UnixNano())),
+		options:               opts,
+		SpanReporter:          NewSpanReporter(opts.Writer, NewSpanEncoder()),
+		spanPool:              &sync.Pool{New: func() interface{} { return &span{} }},
+		rng:                   rand.New(rand.NewSource(time.Now().UnixNano())),
+		textMapPropagator:     newTextMapPropagator(),
+		httpHeadersPropagator: newHTTPHeadersPropagator(),
 	}
 }
 
@@ -109,10 +120,12 @@ func (t *tracer) startSpanWithOptions(
 	sp.start = startTime
 	sp.operation = operationName
 	sp.tags = opts.Tags
-	sp.log = opentracing.LogRecord{
+
+	sp.logs = make([]opentracing.LogRecord, 0, 10)
+	sp.logs = append(sp.logs, opentracing.LogRecord{
 		Timestamp: startTime,
 		Fields:    []log.Field{log.String("event", "Start-Span")},
-	}
+	})
 
 	if t.options.DebugAssertSingleGoroutine {
 		sp.setTag(debugGoroutineIDTag, curGoroutineID())
@@ -143,14 +156,18 @@ func (t *tracer) startSpanWithOptions(
 		sp.context.spanID = sp.context.traceID
 	}
 
-	t.Report(sp)
+	if t.options.MultiEvent {
+		t.Report(sp)
+	}
 	return sp
 }
 
 func (t *tracer) Inject(sc opentracing.SpanContext, format interface{}, carrier interface{}) error {
 	switch format {
-	case opentracing.TextMap, opentracing.HTTPHeaders:
-		return injectText(sc, carrier)
+	case opentracing.TextMap:
+		return t.textMapPropagator.Inject(sc, carrier)
+	case opentracing.HTTPHeaders:
+		return t.httpHeadersPropagator.Inject(sc, carrier)
 	case opentracing.Binary:
 		return opentracing.ErrUnsupportedFormat
 	}
@@ -159,8 +176,10 @@ func (t *tracer) Inject(sc opentracing.SpanContext, format interface{}, carrier 
 
 func (t *tracer) Extract(format interface{}, carrier interface{}) (opentracing.SpanContext, error) {
 	switch format {
-	case opentracing.TextMap, opentracing.HTTPHeaders:
-		return extractText(carrier)
+	case opentracing.TextMap:
+		return t.textMapPropagator.Extract(carrier)
+	case opentracing.HTTPHeaders:
+		return t.httpHeadersPropagator.Extract(carrier)
 	case opentracing.Binary:
 		return nil, opentracing.ErrUnsupportedFormat
 	}
@@ -169,22 +188,17 @@ func (t *tracer) Extract(format interface{}, carrier interface{}) (opentracing.S
 
 // newSpan retrieves an instance of a clean Span object.
 func (t *tracer) newSpan() *span {
-	// t.Lock()
-	// defer t.Unlock()
-
 	sp := t.spanPool.Get().(*span)
 	sp.context = spanContext{}
 	sp.duration = -1
 	sp.tracer = nil
 	sp.tags = nil
+	sp.logs = nil
 	sp.prefix = nil
 	return sp
 }
 
 func (t *tracer) freeSpan(sp *span) {
-	// t.Lock()
-	// defer t.Unlock()
-
 	t.spanPool.Put(sp)
 }
 

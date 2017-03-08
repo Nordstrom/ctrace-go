@@ -32,7 +32,7 @@ type span struct {
 	// not to be enumerated here.
 	tags map[string]interface{}
 
-	log opentracing.LogRecord
+	logs []opentracing.LogRecord
 
 	prefix []byte
 }
@@ -80,8 +80,12 @@ func (s *span) reportLog(l opentracing.LogRecord) {
 	if l.Timestamp.IsZero() {
 		l.Timestamp = time.Now()
 	}
-	s.log = l
-	s.tracer.Report(s)
+	if s.tracer.options.MultiEvent {
+		s.logs[0] = l
+		s.tracer.Report(s)
+	} else {
+		s.logs = append(s.logs, l)
+	}
 }
 
 func (s *span) LogEvent(event string) {
@@ -125,9 +129,15 @@ func (s *span) FinishWithOptions(opts opentracing.FinishOptions) {
 	s.finish = finishTime
 	s.duration = duration
 
-	s.log = opentracing.LogRecord{
+	log := opentracing.LogRecord{
 		Timestamp: finishTime,
 		Fields:    []log.Field{log.String("event", "Finish-Span")},
+	}
+
+	if s.tracer.options.MultiEvent {
+		s.logs[0] = log
+	} else {
+		s.logs = append(s.logs, log)
 	}
 
 	s.tracer.Report(s)
