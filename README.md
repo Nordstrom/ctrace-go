@@ -1,5 +1,5 @@
 # ctrace-go
-[![GoDoc][doc-img]][doc] [![Build Status][ci-img]][ci] [![Coverage Status][cov-img]][cov] [![OpenTracing 1.0 Enabled][ot-img]][ot-url]
+[![GoDoc][doc-img]][doc] [![Build Status][ci-img]][ci] [![Report Card][rep-img]][rep][![Coverage Status][cov-img]][cov] [![OpenTracing 1.0 Enabled][ot-img]][ot-url]
 
 Canonical OpenTracing for Go
 
@@ -167,6 +167,8 @@ Please see the [contributing guide](CONTRIBUTING.md) for details on contributing
 [doc]: https://godoc.org/github.com/Nordstrom/ctrace-go
 [ci-img]: https://travis-ci.org/Nordstrom/ctrace-go.svg
 [ci]: https://travis-ci.org/Nordstrom/ctrace-go
+[rep-img]: https://goreportcard.com/badge/github.com/Nordstrom/ctrace-go
+[rep]: https://goreportcard.com/report/github.com/Nordstrom/ctrace-go
 [cov-img]: https://coveralls.io/repos/github/Nordstrom/ctrace-go/badge.svg
 [cov]: https://coveralls.io/github/Nordstrom/ctrace-go
 [ot-img]: https://img.shields.io/badge/OpenTracing--1.0-enabled-blue.svg

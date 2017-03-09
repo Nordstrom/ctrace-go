@@ -12,12 +12,10 @@ var _ = Describe("SpanReporter", func() {
 	var (
 		buf bytes.Buffer
 		rep SpanReporter
-		out map[string]interface{}
 	)
 
 	BeforeEach(func() {
 		buf.Reset()
-		out = make(map[string]interface{})
 		rep = NewSpanReporter(&buf, NewSpanEncoder())
 	})
 
