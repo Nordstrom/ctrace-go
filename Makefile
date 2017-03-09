@@ -3,7 +3,7 @@ BENCH_FLAGS ?= -cpuprofile=cpu.pprof -memprofile=mem.pprof -benchmem
 PKGS ?= $(shell glide novendor)
 
 # Many Go tools take file globs or directories as arguments instead of packages.
-PKG_FILES ?= *.go examples http
+PKG_FILES ?= *.go http ext log examples
 
 # The linting tools evolve with each Go version, so run them only on the latest
 # stable release.
@@ -25,6 +25,7 @@ dependencies:
 	@echo "Installing test dependencies..."
 	go install ./vendor/github.com/axw/gocov/gocov
 	go install ./vendor/github.com/mattn/goveralls
+	go install ./vendor/github.com/onsi/ginkgo
 ifdef SHOULD_LINT
 	@echo "Installing golint..."
 	go install ./vendor/github.com/golang/lint/golint
@@ -53,11 +54,18 @@ endif
 
 .PHONY: test
 test:
+	@echo $(PKGS)
 	go test -race $(PKGS)
+
+.PHONY: examples
+examples:
+	go build -o ./examples/server ./examples/server.go
+	@echo use ctrl-c to shutdown the example server
+	./examples/server
 
 .PHONY: coveralls
 coveralls:
-	goveralls -service=travis-ci
+	goveralls -service=travis-ci -ignore=./examples/server.go
 
 .PHONY: bench
 BENCH ?= .

@@ -26,3 +26,6 @@ _testmain.go
 vendor
 
 dump*
+
+example/build/
+*.coverprofile
