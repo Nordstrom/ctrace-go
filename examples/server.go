@@ -11,7 +11,7 @@ import (
 )
 
 var httpClient = &http.Client{
-	Transport: chttp.NewTransporter("http-client", &http.Transport{}),
+	Transport: chttp.NewTracedTransport(&http.Transport{}),
 }
 
 func handleDemoGateway(w http.ResponseWriter, r *http.Request) {
