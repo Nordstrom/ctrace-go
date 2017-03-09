@@ -34,10 +34,11 @@ func (r *spanReporter) Report(sp opentracing.Span) {
 	n, err := r.Write(bytes)
 
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
+		return
 	}
 
 	if expectedBytes != n {
-		panic(fmt.Sprintf("Expect %d bytes reported, but had %d instead", expectedBytes, n))
+		fmt.Printf("Expect %d bytes reported, but had %d instead\n", expectedBytes, n)
 	}
 }

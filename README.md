@@ -1,6 +1,5 @@
 # ctrace-go
-[![Build Status](https://travis-ci.org/Nordstrom/ctrace-go.svg?branch=new)](https://travis-ci.org/Nordstrom/ctrace-go)
-[![Coverage Status](https://coveralls.io/repos/github/Nordstrom/ctrace-go/badge.svg?branch=new)](https://coveralls.io/github/Nordstrom/ctrace-go?branch=new)
+[![GoDoc][doc-img]][doc] [![Build Status][ci-img]][ci] [![Coverage Status][cov-img]][cov] [![OpenTracing 1.0 Enabled][ot-img]][ot-url]
 
 Canonical OpenTracing for Go
 
@@ -160,3 +159,15 @@ You will regret it. Use extractor functions instead.
 
 ## Contributing
 Please see the [contributing guide](CONTRIBUTING.md) for details on contributing to ctrace-go.
+
+## License
+[Apache License 2.0](LICENSE)
+
+[doc-img]: https://godoc.org/github.com/Nordstrom/ctrace-go?status.svg
+[doc]: https://godoc.org/github.com/Nordstrom/ctrace-go
+[ci-img]: https://travis-ci.org/Nordstrom/ctrace-go.svg?branch=new
+[ci]: https://travis-ci.org/Nordstrom/ctrace-go
+[cov-img]: https://coveralls.io/repos/github/Nordstrom/ctrace-go/badge.svg?branch=new
+[cov]: https://coveralls.io/github/Nordstrom/ctrace-go?branch=new
+[ot-img]: https://img.shields.io/badge/OpenTracing--1.0-enabled-blue.svg
+[ot-url]: http://opentracing.io
