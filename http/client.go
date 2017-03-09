@@ -1,52 +1,83 @@
 package http
 
 import (
+	"io"
 	"net/http"
 
 	"github.com/Nordstrom/ctrace-go/ext"
+	"github.com/Nordstrom/ctrace-go/log"
 	opentracing "github.com/opentracing/opentracing-go"
-	"github.com/opentracing/opentracing-go/log"
 )
 
-type interceptor struct {
-	component   string
-	transporter http.RoundTripper
+type tracedTransport struct {
+	component string
+	transport http.RoundTripper
+	options   httpOptions
 }
 
-// NewTransporter creates a new Transporter (http.RoundTripper) that intercepts
+// NewTracedTransport creates a new Transporter (http.RoundTripper) that intercepts
 // and traces egress requests.
-func NewTransporter(component string, t http.RoundTripper) http.RoundTripper {
-	return interceptor{
-		component:   component,
-		transporter: t,
+func NewTracedTransport(t http.RoundTripper, options ...Option) http.RoundTripper {
+	opts := httpOptions{
+		opNameFunc: func(r *http.Request) string {
+			return r.Method + ":" + r.URL.Path
+		},
+	}
+
+	for _, opt := range options {
+		opt(&opts)
+	}
+	return &tracedTransport{
+		component: "ctrace.TracedTransport",
+		transport: t,
+		options:   opts,
 	}
 }
 
-func (i interceptor) RoundTrip(r *http.Request) (*http.Response, error) {
+type closeTracker struct {
+	io.ReadCloser
+	sp opentracing.Span
+}
 
+func (c closeTracker) Close() error {
+	err := c.ReadCloser.Close()
+	if err != nil {
+		c.sp.SetTag(ext.ErrorKey, true)
+		c.sp.LogFields(
+			log.Event("error"),
+			log.ErrorKind("http-client"),
+			log.ErrorObject(err),
+		)
+	}
+	c.sp.Finish()
+	return err
+}
+
+func (t *tracedTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	span, _ := opentracing.StartSpanFromContext(
-		r.Context(),
-		r.Method+":"+r.URL.Path,
+		req.Context(),
+		t.options.opNameFunc(req),
 		ext.SpanKindClient(),
-		ext.Component(i.component),
-		ext.HTTPMethod(r.Method),
-		ext.HTTPUrl(r.URL.String()),
+		ext.Component(t.component),
+		ext.HTTPMethod(req.Method),
+		ext.HTTPUrl(req.URL.String()),
 	)
 
 	tracer := opentracing.GlobalTracer()
 	tracer.Inject(
 		span.Context(),
 		opentracing.HTTPHeaders,
-		opentracing.HTTPHeadersCarrier(r.Header))
+		opentracing.HTTPHeadersCarrier(req.Header))
 
-	res, err := i.transporter.RoundTrip(r)
+	res, err := t.transport.RoundTrip(req)
 
 	if err != nil {
-		var errDetails = err.Error()
-		span.LogFields(
-			log.String("event", "client-transport-error"),
-			log.String("error_details", errDetails))
 		span.SetTag(ext.ErrorKey, true)
+		span.LogFields(
+			log.Event("error"),
+			log.ErrorKind("http-client"),
+			log.ErrorObject(err),
+		)
 		span.Finish()
 		return res, err
 	}
@@ -54,12 +85,11 @@ func (i interceptor) RoundTrip(r *http.Request) (*http.Response, error) {
 	span.SetTag(ext.HTTPStatusCodeKey, res.StatusCode)
 	if res.StatusCode >= 400 {
 		span.SetTag(ext.ErrorKey, true)
-		// errDetails, err := httputil.DumpResponse(res, true)
-		// if err != nil {
-		// 	errDetails = []byte("Cannot Parse Response")
-		// }
-		// span.SetTag(ctrace.ErrorDetailsKey, string(errDetails))
 	}
-	span.Finish()
+	if req.Method == "HEAD" {
+		span.Finish()
+	} else {
+		res.Body = closeTracker{res.Body, span}
+	}
 	return res, nil
 }

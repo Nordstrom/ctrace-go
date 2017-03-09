@@ -3,7 +3,7 @@ BENCH_FLAGS ?= -cpuprofile=cpu.pprof -memprofile=mem.pprof -benchmem
 PKGS ?= $(shell glide novendor)
 
 # Many Go tools take file globs or directories as arguments instead of packages.
-PKG_FILES ?= *.go examples http 
+PKG_FILES ?= *.go examples http
 
 # The linting tools evolve with each Go version, so run them only on the latest
 # stable release.
@@ -46,8 +46,6 @@ ifdef SHOULD_LINT
 	@$(foreach dir,$(PKGS),golint $(dir) 2>&1 | tee -a lint.log;)
 	@echo "Checking for unresolved FIXMEs..."
 	@git grep -i fixme | grep -v -e vendor -e Makefile | tee -a lint.log
-	@echo "Checking for license headers..."
-	@./check_license.sh | tee -a lint.log
 	@[ ! -s lint.log ]
 else
 	@echo "Skipping linters on" $(GO_VERSION)

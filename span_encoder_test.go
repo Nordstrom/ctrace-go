@@ -52,7 +52,7 @@ var _ = Describe("SpanEncoder", func() {
 					"key1": "val1",
 				},
 				logs: []opentracing.LogRecord{
-					opentracing.LogRecord{
+					{
 						Timestamp: time.Now(),
 						Fields: []log.Field{
 							log.String("event", "evt1"),

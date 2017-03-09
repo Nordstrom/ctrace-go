@@ -87,17 +87,18 @@ var _ = Describe("TracedHandler", func() {
 			Ω(sp.Tag("http.status_code")).Should(Equal(400))
 
 			logs := sp.Logs()
-			Ω(logs).Should(HaveLen(1))
-			lg := logs[0]
-			Ω(lg.Fields).Should(HaveLen(3))
-			Ω(lg.Timestamp).Should(BeTemporally(">=", sp.StartTime))
-			Ω(lg.Timestamp).Should(BeTemporally("<=", sp.FinishTime))
-			Ω(lg.Fields[0].Key).Should(Equal("event"))
-			Ω(lg.Fields[0].ValueString).Should(Equal("error"))
-			Ω(lg.Fields[1].Key).Should(Equal("error.kind"))
-			Ω(lg.Fields[1].ValueString).Should(Equal("http-server"))
-			Ω(lg.Fields[2].Key).Should(Equal("http.response.body"))
-			Ω(lg.Fields[2].ValueString).Should(Equal("There was an error"))
+			Ω(logs).Should(HaveLen(0))
+			// TODO: May add this back after decision on response body
+			// lg := logs[0]
+			// Ω(lg.Fields).Should(HaveLen(3))
+			// Ω(lg.Timestamp).Should(BeTemporally(">=", sp.StartTime))
+			// Ω(lg.Timestamp).Should(BeTemporally("<=", sp.FinishTime))
+			// Ω(lg.Fields[0].Key).Should(Equal("event"))
+			// Ω(lg.Fields[0].ValueString).Should(Equal("error"))
+			// Ω(lg.Fields[1].Key).Should(Equal("error.kind"))
+			// Ω(lg.Fields[1].ValueString).Should(Equal("http-server"))
+			// Ω(lg.Fields[2].Key).Should(Equal("http.response.body"))
+			// Ω(lg.Fields[2].ValueString).Should(Equal("There was an error"))
 		})
 	})
 
