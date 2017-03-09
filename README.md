@@ -1,5 +1,5 @@
 # ctrace-go
-[![GoDoc][doc-img]][doc] [![Build Status][ci-img]][ci] [![Report Card][rep-img]][rep][![Coverage Status][cov-img]][cov] [![OpenTracing 1.0 Enabled][ot-img]][ot-url]
+[![GoDoc][doc-img]][doc] [![Build Status][ci-img]][ci] [![Report Card][rep-img]][rep] [![Coverage Status][cov-img]][cov] [![OpenTracing 1.0 Enabled][ot-img]][ot-url]
 
 Canonical OpenTracing for Go
 
