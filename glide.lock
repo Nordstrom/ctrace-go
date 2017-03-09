@@ -1,0 +1,67 @@
+hash: 1b19039a38f80f66116f7dfee56af90ca573c78c0af7fa406ee79191b70179d3
+updated: 2017-03-02T16:49:05.941177361-08:00
+imports:
+- name: github.com/felixge/httpsnoop
+  version: 287b56e9e314227d3113c7c6b434d31aec68089d
+- name: github.com/opentracing/opentracing-go
+  version: 6edb48674bd9467b8e91fda004f2bd7202d60ce4
+  subpackages:
+  - ext
+  - http
+  - log
+  - mocktracer
+- name: golang.org/x/net
+  version: f2499483f923065a842d38eb4c7f1927e6fc6e6d
+  subpackages:
+  - context
+testImports:
+- name: github.com/axw/gocov
+  version: c77561ca0c0cb1ed5d4ce4a912a75f5532566422
+  subpackages:
+  - gocov
+- name: github.com/golang/lint
+  version: b8599f7d71e7fead76b25aeb919c0e2558672f4a
+  subpackages:
+  - golint
+- name: github.com/mattn/goveralls
+  version: 9d621f6940639bf287ecbb6f585a2c26eeba3bbe
+- name: github.com/onsi/ginkgo
+  version: 462326b1628e124b23f42e87a8f2750e3c4e2d24
+  subpackages:
+  - config
+  - internal/codelocation
+  - internal/containernode
+  - internal/failer
+  - internal/leafnodes
+  - internal/remote
+  - internal/spec
+  - internal/specrunner
+  - internal/suite
+  - internal/testingtproxy
+  - internal/writer
+  - reporters
+  - reporters/stenographer
+  - types
+- name: github.com/onsi/gomega
+  version: a78ae492d53aad5a7a232d0d0462c14c400e3ee7
+  subpackages:
+  - format
+  - internal/assertion
+  - internal/asyncassertion
+  - internal/testingtsupport
+  - matchers
+  - matchers/support/goraph/bipartitegraph
+  - matchers/support/goraph/edge
+  - matchers/support/goraph/node
+  - matchers/support/goraph/util
+  - types
+- name: github.com/pborman/uuid
+  version: a97ce2ca70fa5a848076093f05e639a89ca34d06
+- name: github.com/stretchr/testify
+  version: 69483b4bd14f5845b5a1e55bca19e954e827f1d0
+  subpackages:
+  - assert
+- name: golang.org/x/tools
+  version: f5a6ee1ea9f7b3a91e3e70dc1b9706886d0e0ae3
+  subpackages:
+  - cover
