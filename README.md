@@ -27,13 +27,14 @@ First initialize the Global Tracer Singleton as early as possible.
 
 ```go
 import (
-  opentracing "github.com/opentracing/opentracing-go"
-  ctrace "github.com/Nordstrom/ctrace-go"
+	ctrace "github.com/Nordstrom/ctrace-go"
+	opentracing "github.com/opentracing/opentracing-go"
 )
 
 func main() {
-    opentracing.InitGlobalTracer(ctrace.New(...))
-    // ...
+	opentracing.InitGlobalTracer(ctrace.New())
+
+	// ...
 }
 ```
 
@@ -42,9 +43,11 @@ To automatically instrument incoming HTTP Requests use the TracedHandler.
 
 ```go
 import (
-  opentracing "github.com/opentracing/opentracing-go"
-  log "github.com/opentracing/opentracing-go/log"
-  chttp "github.com/Nordstrom/ctrace-go/http"
+	"net/http"
+
+	ctrace "github.com/Nordstrom/ctrace-go"
+	chttp "github.com/Nordstrom/ctrace-go/http"
+	opentracing "github.com/opentracing/opentracing-go"
 )
 
 func ok(w http.ResponseWriter, r *http.Request) {
@@ -80,20 +83,27 @@ To automatically instrument outgoing HTTP Requests use the ctrace http.Transport
 
 ```go
 import (
-  "net/http"
-  opentracing "github.com/opentracing/opentracing-go"
-  chttp "github.com/Nordstrom/ctrace-go/http"
+	"context"
+	"net/http"
+
+	chttp "github.com/Nordstrom/ctrace-go/http"
 )
 
 var httpClient = &http.Client{
-  Transport: chttp.NewTracedTransport(&http.Transport{}),
+	Transport: chttp.NewTracedTransport(&http.Transport{}),
 }
 
-func makeOutgoing(ctx context.Context) {
-  req, err := http.NewRequest("GET", "http://localhost:8004/outgoing", nil)
-	res, err := httpClient.Do(req.WithContext(ctx))
+func send(ctx context.Context, method string, url string, body io.Reader) (*http.Response, error) {
+	req, err := http.NewRequest(method, url, body)
+	if err != nil {
+		return nil, err
+	}
+	return httpClient.Do(req.WithContext(ctx))
 }
 ```
+
+## Examples
+For an more complete example of ctrace instrumentation, take a look at (Examples).
 
 ## Advanced Usage
 If middleware does not fully meet your needs, you can manually instrument spans
