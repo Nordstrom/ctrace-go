@@ -32,16 +32,13 @@ import (
 )
 
 func main() {
-    opentracing.InitGlobalTracer(
-        // tracing impl specific:
-        ctrace.New(...),
-    )
+    opentracing.InitGlobalTracer(ctrace.New(...))
     // ...
 }
 ```
 
 ### Instrument Incoming HTTP Requests
-To automatically instrument incoming HTTP Requests use the TracedHandlerFunc wrapper.
+To automatically instrument incoming HTTP Requests use the TracedHandler.
 
 ```go
 import (
@@ -50,51 +47,51 @@ import (
   chttp "github.com/Nordstrom/ctrace-go/http"
 )
 
-func handleDemo(w http.ResponseWriter, r *http.Request) {
-  // ...
-  processDemo(r.Context())
-  // ...
+func ok(w http.ResponseWriter, r *http.Request) {
+	region := r.URL.Query().Get("region")
+	msg := hello(r.Context(), region)
+	w.Write([]byte(msg))
 }
 
 func main() {
-  // ...
-
-  http.HandleFunc("/demo", chttp.TracedHandlerFunc(handleDemo))
-
-  // ...
-
-  http.ListenAndServe(":80", nil)
+	opentracing.InitGlobalTracer(ctrace.New())
+	http.HandleFunc("/ok", ok)
+	http.ListenAndServe(":8004", chttp.TracedHandler(http.DefaultServeMux))
 }
+
 ```
 
 ### Log Events
 To log events within the context of the current Span, use span.LogFields.
 
 ```go
-func processDemo(ctx context.Context, data string) {
-  span := opentracing.SpanFromContext(ctx)
-  span.LogFields(
-    log.String("event", "processing-demo"),
-    log.String("data", data),
-  )
-  // ...
+func hello(ctx context.Context, region string) string {
+	span := opentracing.SpanFromContext(ctx)
+
+	msg := fmt.Sprintf("Hello %v!", region)
+	span.LogFields(log.Event("generate-msg"), log.Message(msg))
+	return msg
 }
+
 ```
 
 ### Instrument Outgoing HTTP Requests
 To automatically instrument outgoing HTTP Requests use the ctrace http.Transport.
 
 ```go
+import (
+  "net/http"
+  opentracing "github.com/opentracing/opentracing-go"
+  chttp "github.com/Nordstrom/ctrace-go/http"
+)
+
 var httpClient = &http.Client{
-  Transport: chttp.NewTransporter("http-client", &http.Transport{}),
+  Transport: chttp.NewTracedTransport(&http.Transport{}),
 }
 
 func makeOutgoing(ctx context.Context) {
-  req, err := http.NewRequest("GET", "http://some-service.com/demo", nil)
-  if err != nil {
-    panic(err)
-  }
-  resp, err := httpClient.Do(req.WithContext(ctx))
+  req, err := http.NewRequest("GET", "http://localhost:8004/outgoing", nil)
+	res, err := httpClient.Do(req.WithContext(ctx))
 }
 ```
 

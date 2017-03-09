@@ -96,18 +96,18 @@ func newTextMapPropagator() *textMapPropagator {
 
 func newHTTPHeadersPropagator() *textMapPropagator {
 	return &textMapPropagator{
-		traceIDKey:    "X-CT-Trace-Id",
-		spanIDKey:     "X-CT-Span-Id",
-		baggagePrefix: "X-CT-Bag-",
+		traceIDKey:    "ct-trace-id",
+		spanIDKey:     "ct-span-id",
+		baggagePrefix: "ct-bag-",
 		encodeKey: func(key string) string {
 			return url.QueryEscape(key)
 		},
 		decodeKey: func(key string) string {
 			// ignore decoding errors, cannot do anything about them
 			if k, err := url.QueryUnescape(key); err == nil {
-				return k
+				return strings.ToLower(k)
 			}
-			return key
+			return strings.ToLower(key)
 		},
 		encodeValue: func(val string) string {
 			return url.QueryEscape(val)
@@ -158,6 +158,7 @@ func (p *textMapPropagator) Extract(
 
 	decodedBaggage := make(map[string]string)
 	err = carrier.ForeachKey(func(k, v string) error {
+		k = p.decodeKey(k)
 		switch k {
 		case p.traceIDKey:
 			traceID, err = strconv.ParseUint(v, 16, 64)
@@ -172,7 +173,7 @@ func (p *textMapPropagator) Extract(
 		default:
 			if strings.HasPrefix(k, p.baggagePrefix) {
 				key := strings.TrimPrefix(k, p.baggagePrefix)
-				decodedBaggage[p.decodeKey(key)] = v
+				decodedBaggage[key] = v
 			}
 			// Balance off the requiredFieldCount++ just below...
 			requiredFieldCount--

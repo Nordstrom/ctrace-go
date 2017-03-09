@@ -57,11 +57,10 @@ test:
 	@echo $(PKGS)
 	go test -race $(PKGS)
 
-.PHONY: examples
-examples:
-	go build -o ./examples/server ./examples/server.go
-	@echo use ctrl-c to shutdown the example server
-	./examples/server
+.PHONY: hello-world
+hello-world:
+	@echo use ctrl-c to shutdown the hello-world example
+	go  run ./examples/hello_world.go
 
 .PHONY: coveralls
 coveralls:

@@ -27,5 +27,5 @@ vendor
 
 dump*
 
-example/build/
+build
 *.coverprofile

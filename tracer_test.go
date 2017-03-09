@@ -107,8 +107,8 @@ var _ = Describe("Tracer", func() {
 			It("injects HTTP Headers", func() {
 				hdrs := http.Header{}
 				tracer.Inject(ctx, opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(hdrs))
-				Ω(hdrs.Get("X-CT-Span-Id")).Should(Equal("f5"))
-				Ω(hdrs.Get("X-CT-Trace-Id")).Should(Equal("7b"))
+				Ω(hdrs.Get("Ct-Span-Id")).Should(Equal("f5"))
+				Ω(hdrs.Get("Ct-Trace-Id")).Should(Equal("7b"))
 			})
 
 			It("injects Text Map", func() {
@@ -127,8 +127,8 @@ var _ = Describe("Tracer", func() {
 				}
 				hdrs := http.Header{}
 				tracer.Inject(ctx, opentracing.HTTPHeaders, hdrs)
-				Ω(hdrs.Get("X-CT-Bag-bagitem1")).Should(Equal("bagval1"))
-				Ω(hdrs.Get("X-CT-Bag-bagitem2")).Should(Equal("bagval2"))
+				Ω(hdrs.Get("Ct-Bag-bagitem1")).Should(Equal("bagval1"))
+				Ω(hdrs.Get("Ct-Bag-bagitem2")).Should(Equal("bagval2"))
 			})
 
 			It("injects Text Map Baggage", func() {
@@ -151,8 +151,8 @@ var _ = Describe("Tracer", func() {
 		)
 		JustBeforeEach(func() {
 			hdrs = http.Header{
-				"X-CT-Span-Id":  []string{"f5"},
-				"X-CT-Trace-Id": []string{"7b"},
+				"Ct-Span-Id":  []string{"f5"},
+				"Ct-Trace-Id": []string{"7b"},
 			}
 			tracer = New()
 		})
@@ -170,8 +170,8 @@ var _ = Describe("Tracer", func() {
 
 		Context("with baggage", func() {
 			It("extracts HTTP Baggage Headers", func() {
-				hdrs["X-CT-Bag-bagitem1"] = []string{"bagval1"}
-				hdrs["X-CT-Bag-bag-item2"] = []string{"bagval2"}
+				hdrs["Ct-Bag-bagitem1"] = []string{"bagval1"}
+				hdrs["Ct-Bag-bag-item2"] = []string{"bagval2"}
 
 				c, _ := tracer.Extract(opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(hdrs))
 				ctx := c.(spanContext)
