@@ -165,9 +165,9 @@ Please see the [contributing guide](CONTRIBUTING.md) for details on contributing
 
 [doc-img]: https://godoc.org/github.com/Nordstrom/ctrace-go?status.svg
 [doc]: https://godoc.org/github.com/Nordstrom/ctrace-go
-[ci-img]: https://travis-ci.org/Nordstrom/ctrace-go.svg?branch=new
+[ci-img]: https://travis-ci.org/Nordstrom/ctrace-go.svg
 [ci]: https://travis-ci.org/Nordstrom/ctrace-go
-[cov-img]: https://coveralls.io/repos/github/Nordstrom/ctrace-go/badge.svg?branch=new
-[cov]: https://coveralls.io/github/Nordstrom/ctrace-go?branch=new
+[cov-img]: https://coveralls.io/repos/github/Nordstrom/ctrace-go/badge.svg
+[cov]: https://coveralls.io/github/Nordstrom/ctrace-go
 [ot-img]: https://img.shields.io/badge/OpenTracing--1.0-enabled-blue.svg
 [ot-url]: http://opentracing.io
