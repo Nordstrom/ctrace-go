@@ -1,7 +1,7 @@
 # ctrace-go
 [![GoDoc][doc-img]][doc] [![Build Status][ci-img]][ci] [![Report Card][rep-img]][rep] [![Coverage Status][cov-img]][cov] [![OpenTracing 1.0 Enabled][ot-img]][ot-url]
 
-Canonical OpenTracing for Go
+[Canonical OpenTracing](https://github.com/Nordstrom/ctrace) for Go
 
 ## Why
 [OpenTracing](http://opentracing.io) is a young specification and for most (if not all) SDK implementations, output format and wire protocol are specific to the backend platform implementation.  ctrace attempts to decouple the format and wire protocol from the backend tracer implementation.
