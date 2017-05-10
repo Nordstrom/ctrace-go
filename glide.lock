@@ -1,10 +1,10 @@
 hash: 1b19039a38f80f66116f7dfee56af90ca573c78c0af7fa406ee79191b70179d3
-updated: 2017-03-02T16:49:05.941177361-08:00
+updated: 2017-05-08T13:40:52.075958441-07:00
 imports:
 - name: github.com/felixge/httpsnoop
   version: 287b56e9e314227d3113c7c6b434d31aec68089d
 - name: github.com/opentracing/opentracing-go
-  version: 6edb48674bd9467b8e91fda004f2bd7202d60ce4
+  version: 1949ddbfd147afd4d964a9f00b24eb291e0e7c38
   subpackages:
   - ext
   - http
@@ -26,7 +26,7 @@ testImports:
 - name: github.com/mattn/goveralls
   version: 9d621f6940639bf287ecbb6f585a2c26eeba3bbe
 - name: github.com/onsi/ginkgo
-  version: 462326b1628e124b23f42e87a8f2750e3c4e2d24
+  version: 77a8c1e5c40d6bb6c5eb4dd4bdce9763564f6298
   subpackages:
   - config
   - internal/codelocation
@@ -35,19 +35,23 @@ testImports:
   - internal/leafnodes
   - internal/remote
   - internal/spec
+  - internal/spec_iterator
   - internal/specrunner
   - internal/suite
   - internal/testingtproxy
   - internal/writer
   - reporters
   - reporters/stenographer
+  - reporters/stenographer/support/go-colorable
+  - reporters/stenographer/support/go-isatty
   - types
 - name: github.com/onsi/gomega
-  version: a78ae492d53aad5a7a232d0d0462c14c400e3ee7
+  version: 334b8f472b3af5d541c5642701c1e29e2126f486
   subpackages:
   - format
   - internal/assertion
   - internal/asyncassertion
+  - internal/oraclematcher
   - internal/testingtsupport
   - matchers
   - matchers/support/goraph/bipartitegraph
@@ -61,7 +65,13 @@ testImports:
   version: 69483b4bd14f5845b5a1e55bca19e954e827f1d0
   subpackages:
   - assert
+- name: golang.org/x/sys
+  version: 9ccfe848b9db8435a24c424abbc07a921adf1df5
+  subpackages:
+  - unix
 - name: golang.org/x/tools
   version: f5a6ee1ea9f7b3a91e3e70dc1b9706886d0e0ae3
   subpackages:
   - cover
+- name: gopkg.in/yaml.v2
+  version: cd8b52f8269e0feb286dfeef29f8fe4d5b397e0b

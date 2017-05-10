@@ -1,0 +1,37 @@
+version: '3'
+networks:
+  main:
+    driver: bridge
+
+services:
+  gw-go:
+    build:
+      context: .
+      args:
+        http_proxy: "${http_proxy}"
+        https_proxy: "${https_proxy}"
+
+    image: ctrace-hgw-go
+    networks:
+      - main
+    ports:
+      - "8004:80"
+    environment:
+      http_proxy: "${http_proxy}"
+      https_proxy: "${https_proxy}"
+
+  hello-go:
+    build:
+      context: .
+      args:
+        http_proxy: "${http_proxy}"
+        https_proxy: "${https_proxy}"
+
+    image: ctrace-hgw-go
+    networks:
+      - main
+    ports:
+      - "8005:80"
+    environment:
+      http_proxy: "${http_proxy}"
+      https_proxy: "${https_proxy}"

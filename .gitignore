@@ -29,3 +29,5 @@ dump*
 
 build
 *.coverprofile
+
+*.env

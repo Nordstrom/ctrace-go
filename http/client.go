@@ -1,6 +1,7 @@
 package http
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 
@@ -54,6 +55,8 @@ func (c closeTracker) Close() error {
 }
 
 func (t *tracedTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	fmt.Println("RoundTrip")
+	fmt.Println(req.Context())
 	span, _ := opentracing.StartSpanFromContext(
 		req.Context(),
 		t.options.opNameFunc(req),
