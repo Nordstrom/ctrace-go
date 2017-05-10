@@ -11,7 +11,7 @@ services:
         http_proxy: "${http_proxy}"
         https_proxy: "${https_proxy}"
 
-    image: ctrace-hgw-go
+    image: ctrace-demo-go
     networks:
       - main
     ports:
@@ -27,7 +27,7 @@ services:
         http_proxy: "${http_proxy}"
         https_proxy: "${https_proxy}"
 
-    image: ctrace-hgw-go
+    image: ctrace-demo-go
     networks:
       - main
     ports:

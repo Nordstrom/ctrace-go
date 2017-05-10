@@ -5,7 +5,7 @@ HTTP_PROXY = ${http_proxy}
 HTTPS_PROXY = ${https_proxy}
 
 # Many Go tools take file globs or directories as arguments instead of packages.
-PKG_FILES ?= *.go http ext log examples
+PKG_FILES ?= *.go http ext log demo
 
 # The linting tools evolve with each Go version, so run them only on the latest
 # stable release.
@@ -55,61 +55,20 @@ test:
 	@echo $(PKGS)
 	go test -race $(PKGS)
 
-hgw:
-	@echo use ctrl-c to shutdown the hello-gateway demo
-	go run ./demos/hello_gateway/main.go -port 8004
-
-hw:
-	@echo use ctrl-c to shutdown the hello-gateway demo
-	go run ./demos/hello_world/main.go -port 8005
-
-net: net-clean
-	docker network create main
-
-net-clean: hw-clean hgw-clean
-	docker network rm main || true
-
-hello-clean:
-	docker rm -f hello-go || true
-
-gw-clean:
-	docker rm -f gw-go || true
-
-hgw-build:
+demo-build:
 	docker build \
 		--build-arg http_proxy=$(HTTP_PROXY) \
 		--build-arg https_proxy=$(HTTPS_PROXY) \
-		-f demos/hello_gateway/Dockerfile -t ctrace-hgw-go .
+		-t ctrace-demo-go .
 
-gw-run: hgw-build net hw-clean
-	docker run \
-		--env http_proxy=$(HTTP_PROXY) \
-		--env https_proxy=$(HTTPS_PROXY) \
-		--network main \
-		--name gw-go \
-		-d -p 8004:80 \
-		ctrace-hgw-go
-
-hello-run: hgw-build net hgw-clean
-	docker run \
-		--env http_proxy=$(HTTP_PROXY) \
-		--env https_proxy=$(HTTPS_PROXY) \
-		--network main \
-		--name hello-go \
-		-d -p 8005:80 \
-		ctrace-hgw-go
-
-hgw-run: gw-run hello-run
-
-hgw-down:
+demo-down:
 	docker-compose down
-	docker rmi -f ctrace-hgw-go
 
-hgw-up: hgw-down
+demo-up: demo-down
 	docker-compose up
 
 coveralls:
-	goveralls -service=travis-ci -ignore=./examples/server.go
+	goveralls -service=travis-ci -ignore=./demos/hellow.go
 
 BENCH ?= .
 bench:
