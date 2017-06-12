@@ -2,6 +2,7 @@ package http
 
 import (
 	"net/http"
+	"os"
 	"sync"
 
 	"github.com/Nordstrom/ctrace-go/ext"
@@ -82,6 +83,9 @@ func TracedHandler(h http.Handler, options ...Option) http.Handler {
 		)
 		h.ServeHTTP(httpsnoop.Wrap(w, hooks), wr)
 		span.SetTag(ext.HTTPStatusCodeKey, status)
+
+		serviceName := os.Getenv("SERVICENAME")
+		span.SetTag("serviceName", serviceName)
 
 		if status >= 400 {
 			span.SetTag(ext.ErrorKey, true)

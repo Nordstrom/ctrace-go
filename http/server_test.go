@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -113,6 +114,19 @@ var _ = Describe("TracedHandler", func() {
 			http.Get(srv.URL + "/test/foo")
 			Ω(tr.FinishedSpans()[0].OperationName).Should(Equal("GET:/test/foo"))
 		})
+
+		It("records ServiceName when environment variable is set", func() {
+			os.Setenv("SERVICENAME", "some-service")
+			defer os.Unsetenv("SERVICENAME")
+			mux.Handle(
+				"/test/",
+				TracedHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})),
+			)
+
+			srv = httptest.NewServer(mux)
+			http.Get(srv.URL + "/test/foo")
+			Ω(tr.FinishedSpans()[0].Tag("serviceName")).Should(Equal("some-service"))
+		})
 	})
 
 	Context("for HandleFunc", func() {
@@ -144,6 +158,19 @@ var _ = Describe("TracedHandler", func() {
 			srv = httptest.NewServer(mux)
 			http.Get(srv.URL + "/test/foo")
 			Ω(tr.FinishedSpans()[0].OperationName).Should(Equal("OP-OVERRIDE"))
+		})
+
+		It("records ServiceName when environment variable is set", func() {
+			os.Setenv("SERVICENAME", "some-service")
+			defer os.Unsetenv("SERVICENAME")
+			mux.Handle(
+				"/test/",
+				TracedHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})),
+			)
+
+			srv = httptest.NewServer(mux)
+			http.Get(srv.URL + "/test/foo")
+			Ω(tr.FinishedSpans()[0].Tag("serviceName")).Should(Equal("some-service"))
 		})
 	})
 })
