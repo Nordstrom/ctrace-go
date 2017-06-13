@@ -20,6 +20,10 @@ var _ = Describe("Tracer", func() {
 		out map[string]interface{}
 	)
 
+	BeforeEach(func() {
+		os.Setenv("CTRACE_SERVICE_NAME", "")
+	})
+
 	Describe("New", func() {
 		It("creates tracer with stdout writer", func() {
 			trc = New()
@@ -88,6 +92,36 @@ var _ = Describe("Tracer", func() {
 			})
 		})
 
+		Context("with ServiceName option", func() {
+			JustBeforeEach(func() {
+				buf.Reset()
+				trc = NewWithOptions(TracerOptions{Writer: &buf, MultiEvent: true, ServiceName: "tservice"})
+			})
+			It("outputs service tag", func() {
+				_ = trc.StartSpan("x")
+				if err := json.Unmarshal([]byte(buf.String()), &out); err != nil {
+					Fail("Cannot unmarshal JSON")
+				}
+				tags := out["tags"].(map[string]interface{})
+				Ω(tags["service"]).Should(Equal("tservice"))
+			})
+		})
+
+		Context("with ServiceName env variable", func() {
+			JustBeforeEach(func() {
+				buf.Reset()
+				os.Setenv("CTRACE_SERVICE_NAME", "eservice")
+				trc = NewWithOptions(TracerOptions{Writer: &buf, MultiEvent: true})
+			})
+			It("outputs service tag", func() {
+				_ = trc.StartSpan("x")
+				if err := json.Unmarshal([]byte(buf.String()), &out); err != nil {
+					Fail("Cannot unmarshal JSON")
+				}
+				tags := out["tags"].(map[string]interface{})
+				Ω(tags["service"]).Should(Equal("eservice"))
+			})
+		})
 	})
 
 	Describe("Inject", func() {
