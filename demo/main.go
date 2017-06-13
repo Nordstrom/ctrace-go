@@ -8,7 +8,6 @@ import (
 	"net/url"
 
 	ctrace "github.com/Nordstrom/ctrace-go"
-	chttp "github.com/Nordstrom/ctrace-go/http"
 	"github.com/Nordstrom/ctrace-go/log"
 	opentracing "github.com/opentracing/opentracing-go"
 )
@@ -76,7 +75,7 @@ func main() {
 	addr := ":80"
 	fmt.Printf("Listening at %v ...\n", addr)
 
-	e := http.ListenAndServe(addr, chttp.TracedHandler(http.DefaultServeMux))
+	e := http.ListenAndServe(addr, ctrace.TracedHttpHandler(http.DefaultServeMux))
 	if e != nil {
 		panic(e)
 	}

@@ -1,31 +1,40 @@
-package http
+package ctrace
 
 import (
-	"net/http"
-	"sync"
+	"encoding/json"
 
 	"github.com/Nordstrom/ctrace-go/ext"
-	"github.com/felixge/httpsnoop"
+  "github.com/eawsy/aws-lambda-go-event/service/lambda/runtime/event/apigatewayproxyevt"
+  "github.com/eawsy/aws-lambda-go-core/service/lambda/runtime"
 	opentracing "github.com/opentracing/opentracing-go"
 )
 
-// TracedHandler returns a http.Handler that is traced as an opentracing.Span
-func TracedHandler(h http.Handler, options ...Option) http.Handler {
-	mux, muxFound := h.(*http.ServeMux)
-	opts := httpOptions{
-		opNameFunc: func(r *http.Request) string {
-			if muxFound {
-				_, pattern := mux.Handler(r)
-				return r.Method + ":" + pattern
-			}
-			return r.Method + ":" + r.URL.Path
-		},
+type LambdaFunction func(evt *apigatewayproxyevt.Event, ctx *runtime.Context) (interface{}, error)
+
+type LambdaInterceptorFunction func(evt *apigatewayproxyevt.Event, ctx *runtime.Context) SpanConfig
+
+type tracedLambdaOptions struct {
+	interceptor LambdaInterceptorFunction
+}
+
+// Option controls the behavior of the ctrace http middleware
+type TracedLambdaOption func(*tracedLambdaOptions)
+
+// LambdaInterceptor returns a Option that uses given function f to
+// generate operation name for each span.
+func LambdaInterceptor(f LambdaInterceptorFunction) TracedLambdaOption {
+	return func(options *tracedLambdaOptions) {
+		options.interceptor = f
 	}
+}
+
+func TracedApiGwLambdaProxy(fn LambdaFunction, options ...TracedLambdaOption) {
+	opts := tracedLambdaOptions{}
 
 	for _, opt := range options {
 		opt(&opts)
 	}
-	fn := func(w http.ResponseWriter, r *http.Request) {
+	fn := func(evt *apigatewayproxyevt.Event, ctx *runtime.Context) (interface{}, error) {
 		var (
 			tracer       = opentracing.GlobalTracer()
 			parentCtx, _ = tracer.Extract(
@@ -91,9 +100,4 @@ func TracedHandler(h http.Handler, options ...Option) http.Handler {
 	}
 
 	return http.HandlerFunc(fn)
-}
-
-// TracedHandlerFunc returns a http.HandlerFunc that is traced as an opentracing.Span
-func TracedHandlerFunc(fn func(http.ResponseWriter, *http.Request), options ...Option) http.HandlerFunc {
-	return TracedHandler(http.HandlerFunc(fn), options...).ServeHTTP
 }

@@ -11,7 +11,22 @@ import (
 	"github.com/opentracing/opentracing-go/log"
 )
 
-// tracer Implements the `Tracer` interface.
+var (
+	// ChildOf returns a StartSpanOption pointing to a dependent parent span.
+	// If sc == nil, the option has no effect.
+	//
+	// See ChildOfRef, SpanReference
+	ChildOf = opentracing.ChildOf
+)
+
+// Tracer is a simple, thin interface for Span creation and SpanContext
+// propagation.
+type Tracer interface {
+	opentracing.Tracer
+	StartSpanWithOptions(string, opentracing.StartSpanOptions) opentracing.Span
+}
+
+// Tracer Implements the `Tracer` interface.
 type tracer struct {
 	options TracerOptions
 	SpanReporter
@@ -35,6 +50,11 @@ type TracerOptions struct {
 
 	// Writer is used to write serialized trace events.  It defaults to os.Stdout.
 	Writer io.Writer
+
+	// ServiceName allows the configuration of the "service" tag for the entire Tracer.
+	// If not specified here, it can also be specified using environment variable "CTRACE_SERVICE"
+	ServiceName string
+
 	// DebugAssertSingleGoroutine internally records the ID of the goroutine
 	// creating each Span and verifies that no operation is carried out on
 	// it on a different goroutine.
@@ -72,15 +92,36 @@ type TracerOptions struct {
 	DebugAssertUseAfterFinish bool
 }
 
+func init() {
+	Init(TracerOptions{})
+}
+
+// Init initializes the global Tracer returned by Global().
+func Init(opts TracerOptions) {
+	opentracing.SetGlobalTracer(NewWithOptions(opts))
+}
+
+// Global returns the global Tracer
+func Global() Tracer {
+	return opentracing.GlobalTracer().(Tracer)
+}
+
 // New creates a default Tracer.
-func New() opentracing.Tracer {
-	return NewWithOptions(TracerOptions{})
+func New() Tracer {
+	return NewWithOptions(TracerOptions{
+		MultiEvent: true,
+		Writer:     nil,
+	})
 }
 
 // NewWithOptions creates a customized Tracer.
-func NewWithOptions(opts TracerOptions) opentracing.Tracer {
+func NewWithOptions(opts TracerOptions) Tracer {
 	if opts.Writer == nil {
 		opts.Writer = os.Stdout
+	}
+
+	if opts.ServiceName == "" {
+		opts.ServiceName = os.Getenv("CTRACE_SERVICE_NAME")
 	}
 
 	return &tracer{
@@ -101,10 +142,10 @@ func (t *tracer) StartSpan(
 	for _, o := range opts {
 		o.Apply(&sso)
 	}
-	return t.startSpanWithOptions(operationName, sso)
+	return t.StartSpanWithOptions(operationName, sso)
 }
 
-func (t *tracer) startSpanWithOptions(
+func (t *tracer) StartSpanWithOptions(
 	operationName string,
 	opts opentracing.StartSpanOptions,
 ) opentracing.Span {
@@ -120,6 +161,10 @@ func (t *tracer) startSpanWithOptions(
 	sp.start = startTime
 	sp.operation = operationName
 	sp.tags = opts.Tags
+
+	if t.options.ServiceName != "" {
+		sp.setTag("service", t.options.ServiceName)
+	}
 
 	sp.logs = make([]opentracing.LogRecord, 0, 10)
 	sp.logs = append(sp.logs, opentracing.LogRecord{

@@ -1,12 +1,75 @@
 package ctrace
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
 	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/log"
 )
+
+// SpanContext represents Span state that must propagate to descendant Spans and across process
+// boundaries (e.g., a <trace_id, span_id, sampled> tuple).
+type SpanContext interface {
+	opentracing.SpanContext
+	TraceID() string
+	SpanID() string
+}
+
+// spanContext holds the basic Span metadata.
+type spanContext struct {
+	// A probabilistically unique identifier for a [multi-span] trace.
+	traceID uint64
+
+	// A probabilistically unique identifier for a span.
+	spanID uint64
+
+	// The span's associated baggage.
+	baggage map[string]string // initialized on first use
+}
+
+func (c spanContext) TraceID() string {
+	return fmt.Sprintf("%016x", c.traceID)
+}
+
+func (c spanContext) SpanID() string {
+	return fmt.Sprintf("%016x", c.spanID)
+}
+
+// ForeachBaggageItem belongs to the opentracing.SpanContext interface
+func (c spanContext) ForeachBaggageItem(handler func(k, v string) bool) {
+	for k, v := range c.baggage {
+		if !handler(k, v) {
+			break
+		}
+	}
+}
+
+// WithBaggageItem returns an entirely new basictracer SpanContext with the
+// given key:value baggage pair set.
+func (c spanContext) WithBaggageItem(key, val string) spanContext {
+	if c.baggage == nil {
+		return spanContext{c.traceID, c.spanID, map[string]string{key: val}}
+	}
+	var newBaggage = make(map[string]string, len(c.baggage)+1)
+	for k, v := range c.baggage {
+		newBaggage[k] = v
+	}
+	newBaggage[key] = val
+
+	// Use positional parameters so the compiler will help catch new fields.
+	return spanContext{c.traceID, c.spanID, newBaggage}
+}
+
+// Span represents an active, un-finished span in the OpenTracing system.
+//
+// Spans are created by the Tracer interface.
+type Span interface {
+	opentracing.Span
+	RawContext() SpanContext
+	RawTracer() Tracer
+}
 
 type span struct {
 	tracer     *tracer
@@ -156,7 +219,15 @@ func (s *span) Context() opentracing.SpanContext {
 	return s.context
 }
 
+func (s *span) RawContext() SpanContext {
+	return s.context
+}
+
 func (s *span) Tracer() opentracing.Tracer {
+	return s.tracer
+}
+
+func (s *span) RawTracer() Tracer {
 	return s.tracer
 }
 

@@ -1,6 +1,13 @@
-hash: 1b19039a38f80f66116f7dfee56af90ca573c78c0af7fa406ee79191b70179d3
-updated: 2017-05-08T13:40:52.075958441-07:00
+hash: fe7f8689be0826395bf021f24709bc143b73a0f00f43628a37eab121ee287909
+updated: 2017-06-13T10:11:56.143449713-07:00
 imports:
+- name: github.com/eawsy/aws-lambda-go-core
+  version: e26eed6aa244a3d45aa693816a9c5faf39390fcd
+- name: github.com/eawsy/aws-lambda-go-event
+  version: a318481f661f091bafea408f9967cb1ac5bf8905
+  subpackages:
+  - service/lambda/runtime
+  - service/lambda/runtime/event/apigatewayproxyevt
 - name: github.com/felixge/httpsnoop
   version: 287b56e9e314227d3113c7c6b434d31aec68089d
 - name: github.com/opentracing/opentracing-go

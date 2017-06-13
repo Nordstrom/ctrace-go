@@ -5,6 +5,11 @@ import:
   subpackages:
   - http
 - package: github.com/felixge/httpsnoop
+- package: github.com/eawsy/aws-lambda-go-event
+  subpackages:
+  - service/lambda/runtime
+  - service/lambda/runtime/event/apigatewayproxyevt
+- package: github.com/eawsy/aws-lambda-go-core
 testImport:
 - package: github.com/onsi/ginkgo
   version: ^1.2.0
