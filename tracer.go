@@ -35,6 +35,11 @@ type TracerOptions struct {
 
 	// Writer is used to write serialized trace events.  It defaults to os.Stdout.
 	Writer io.Writer
+
+	// ServiceName allows the configuration of the "service" tag for the entire Tracer.
+	// If not specified here, it can also be specified using environment variable "CTRACE_SERVICE"
+	ServiceName string
+
 	// DebugAssertSingleGoroutine internally records the ID of the goroutine
 	// creating each Span and verifies that no operation is carried out on
 	// it on a different goroutine.
@@ -83,6 +88,10 @@ func NewWithOptions(opts TracerOptions) opentracing.Tracer {
 		opts.Writer = os.Stdout
 	}
 
+	if opts.ServiceName == "" {
+		opts.ServiceName = os.Getenv("CTRACE_SERVICE_NAME")
+	}
+
 	return &tracer{
 		options:               opts,
 		SpanReporter:          NewSpanReporter(opts.Writer, NewSpanEncoder()),
@@ -120,6 +129,10 @@ func (t *tracer) startSpanWithOptions(
 	sp.start = startTime
 	sp.operation = operationName
 	sp.tags = opts.Tags
+
+	if t.options.ServiceName != "" {
+		sp.setTag("service", t.options.ServiceName)
+	}
 
 	sp.logs = make([]opentracing.LogRecord, 0, 10)
 	sp.logs = append(sp.logs, opentracing.LogRecord{
