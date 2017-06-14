@@ -84,8 +84,8 @@ func TracedHandler(h http.Handler, options ...Option) http.Handler {
 		h.ServeHTTP(httpsnoop.Wrap(w, hooks), wr)
 		span.SetTag(ext.HTTPStatusCodeKey, status)
 
-		serviceName := os.Getenv("SERVICENAME")
-		span.SetTag("serviceName", serviceName)
+		serviceName := os.Getenv("CTRACE_SERVICE_NAME")
+		span.SetTag("service", serviceName)
 
 		if status >= 400 {
 			span.SetTag(ext.ErrorKey, true)

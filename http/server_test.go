@@ -116,8 +116,8 @@ var _ = Describe("TracedHandler", func() {
 		})
 
 		It("records ServiceName when environment variable is set", func() {
-			os.Setenv("SERVICENAME", "some-service")
-			defer os.Unsetenv("SERVICENAME")
+			os.Setenv("CTRACE_SERVICE_NAME", "some-service")
+			defer os.Unsetenv("CTRACE_SERVICE_NAME")
 			mux.Handle(
 				"/test/",
 				TracedHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})),
@@ -125,7 +125,7 @@ var _ = Describe("TracedHandler", func() {
 
 			srv = httptest.NewServer(mux)
 			http.Get(srv.URL + "/test/foo")
-			Ω(tr.FinishedSpans()[0].Tag("serviceName")).Should(Equal("some-service"))
+			Ω(tr.FinishedSpans()[0].Tag("service")).Should(Equal("some-service"))
 		})
 	})
 
@@ -161,8 +161,8 @@ var _ = Describe("TracedHandler", func() {
 		})
 
 		It("records ServiceName when environment variable is set", func() {
-			os.Setenv("SERVICENAME", "some-service")
-			defer os.Unsetenv("SERVICENAME")
+			os.Setenv("CTRACE_SERVICE_NAME", "some-service")
+			defer os.Unsetenv("CTRACE_SERVICE_NAME")
 			mux.Handle(
 				"/test/",
 				TracedHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})),
@@ -170,7 +170,7 @@ var _ = Describe("TracedHandler", func() {
 
 			srv = httptest.NewServer(mux)
 			http.Get(srv.URL + "/test/foo")
-			Ω(tr.FinishedSpans()[0].Tag("serviceName")).Should(Equal("some-service"))
+			Ω(tr.FinishedSpans()[0].Tag("service")).Should(Equal("some-service"))
 		})
 	})
 })
