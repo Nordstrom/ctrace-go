@@ -1,4 +1,4 @@
-package ctrace
+package core
 
 import (
 	"io"
@@ -9,14 +9,11 @@ import (
 
 	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/log"
+	godebug "github.com/tj/go-debug"
 )
 
 var (
-	// ChildOf returns a StartSpanOption pointing to a dependent parent span.
-	// If sc == nil, the option has no effect.
-	//
-	// See ChildOfRef, SpanReference
-	ChildOf = opentracing.ChildOf
+	debug = godebug.Debug("ctrace-core")
 )
 
 // Tracer is a simple, thin interface for Span creation and SpanContext
@@ -90,20 +87,6 @@ type TracerOptions struct {
 	// When set, it attempts to exacerbate issues emanating from use of Spans
 	// after calling Finish by running additional assertions.
 	DebugAssertUseAfterFinish bool
-}
-
-func init() {
-	Init(TracerOptions{})
-}
-
-// Init initializes the global Tracer returned by Global().
-func Init(opts TracerOptions) {
-	opentracing.SetGlobalTracer(NewWithOptions(opts))
-}
-
-// Global returns the global Tracer
-func Global() Tracer {
-	return opentracing.GlobalTracer().(Tracer)
 }
 
 // New creates a default Tracer.
@@ -181,6 +164,9 @@ func (t *tracer) StartSpanWithOptions(
 	// TODO: would be nice if basictracer did something with all
 	// References, not just the first one.
 	for _, ref := range opts.References {
+		if ref.ReferencedContext == nil {
+			continue
+		}
 		refCtx := ref.ReferencedContext.(spanContext)
 		sp.context.traceID = refCtx.traceID
 		sp.context.spanID = t.randomID()

@@ -5,53 +5,34 @@ import (
 	"net/http"
 	"sync"
 
+	"github.com/Nordstrom/ctrace-go/core"
 	"github.com/Nordstrom/ctrace-go/ext"
 	"github.com/Nordstrom/ctrace-go/log"
 	opentracing "github.com/opentracing/opentracing-go"
 )
 
-type SpanConfig struct {
-	OperationName string
-	Tags          opentracing.Tags
+// *******************  Http Client  *******************
+
+// TracedHTTPInterceptor is a defined function called during HTTP tracing
+// to return custom OperationName and/or Tags for the given request
+type TracedHTTPInterceptor func(r *http.Request) SpanConfig
+
+type tracedHTTPClientTransport struct {
+	component   string
+	transport   http.RoundTripper
+	interceptor []TracedHTTPInterceptor // There is 0 or 1 interceptor
 }
 
-type httpOptions struct {
-	interceptor func(r *http.Request) SpanConfig
-}
-
-// Option controls the behavior of the ctrace http middleware
-type HttpOption func(*httpOptions)
-
-// OperationNameFunc returns a Option that uses given function f to
-// generate operation name for each span.
-func HttpInterceptor(f func(r *http.Request) SpanConfig) HttpOption {
-	return func(options *httpOptions) {
-		options.interceptor = f
-	}
-}
-
-type tracedHttpClientTransport struct {
-	component string
-	transport http.RoundTripper
-	options   httpOptions
-}
-
-func loadHttpOptions(options ...HttpOption) httpOptions {
-	opts := httpOptions{}
-	for _, opt := range options {
-		opt(&opts)
-	}
-	return opts
-}
-
-// TracedHttpClientTransport creates a new Transporter (http.RoundTripper) that intercepts
+// TracedHTTPClientTransport creates a new Transporter (http.RoundTripper) that intercepts
 // and traces egress requests.
-func TracedHttpClientTransport(t http.RoundTripper, options ...HttpOption) http.RoundTripper {
-	opts := loadHttpOptions(options...)
-	return &tracedHttpClientTransport{
-		component: "ctrace.tracedHttpClientTransport",
-		transport: t,
-		options:   opts,
+func TracedHTTPClientTransport(
+	t http.RoundTripper,
+	interceptor ...TracedHTTPInterceptor,
+) http.RoundTripper {
+	return &tracedHTTPClientTransport{
+		component:   "ctrace.TracedHttpClientTransport",
+		transport:   t,
+		interceptor: interceptor,
 	}
 }
 
@@ -61,6 +42,7 @@ type closeTracker struct {
 }
 
 func (c closeTracker) Close() error {
+	debug("Closing Response Writer...")
 	err := c.ReadCloser.Close()
 	if err != nil {
 		c.sp.SetTag(ext.ErrorKey, true)
@@ -74,34 +56,39 @@ func (c closeTracker) Close() error {
 	return err
 }
 
-func optioniallyIntercept(opts httpOptions, r *http.Request) SpanConfig {
-	var config SpanConfig
-
-	if opts.interceptor != nil {
-		config = opts.interceptor(r)
+func optioniallyInterceptHTTP(
+	i []TracedHTTPInterceptor,
+	r *http.Request,
+) SpanConfig {
+	for _, f := range i {
+		return f(r)
 	}
-	return config
+	return SpanConfig{}
 }
 
-func (t *tracedHttpClientTransport) RoundTrip(r *http.Request) (*http.Response, error) {
-	config := optioniallyIntercept(t.options, r)
+func (t *tracedHTTPClientTransport) RoundTrip(
+	r *http.Request,
+) (*http.Response, error) {
 	op := r.Method + ":" + r.URL.Path
-	tags := map[string]interface{}{}
-	tags[ext.SpanKindKey] = ext.SpanKindClientValue
-	tags[ext.ComponentKey] = t.component
-	tags[ext.HTTPMethodKey] = r.Method
-	tags[ext.HTTPUrlKey] = r.URL.String()
+	debug("Starting client RoundTrip: op=%s", op)
+
+	config := optioniallyInterceptHTTP(t.interceptor, r)
+	opts := []opentracing.StartSpanOption{
+		ext.SpanKindClient(),
+		ext.Component(t.component),
+		ext.HTTPMethod(r.Method),
+		ext.HTTPUrl(r.URL.String()),
+	}
 
 	if config.OperationName != "" {
 		op = config.OperationName
 	}
-	for k, v := range config.Tags {
-		tags[k] = v
+	if len(config.Tags) > 0 {
+		opts = append(opts, config.Tags...)
 	}
-	opts := opentracing.StartSpanOptions{Tags: tags}
-	span, _ := startSpanWithOptionsFromContext(r.Context(), op, opts)
 
-	tracer := opentracing.GlobalTracer()
+	tracer := Global()
+	span, _ := StartSpanFromContext(r.Context(), op, opts...)
 	tracer.Inject(
 		span.Context(),
 		opentracing.HTTPHeaders,
@@ -132,7 +119,13 @@ func (t *tracedHttpClientTransport) RoundTrip(r *http.Request) (*http.Response, 
 	return res, nil
 }
 
-func httpOperationName(mux *http.ServeMux, muxFound bool, r *http.Request) string {
+// *******************  Http Server  *******************
+
+func httpOperationName(
+	mux *http.ServeMux,
+	muxFound bool,
+	r *http.Request,
+) string {
 	if muxFound {
 		_, pattern := mux.Handler(r)
 		return r.Method + ":" + pattern
@@ -141,13 +134,13 @@ func httpOperationName(mux *http.ServeMux, muxFound bool, r *http.Request) strin
 }
 
 type responseInterceptor struct {
-	tracer        Tracer
-	parentCtx     SpanContext
-	ctx           SpanContext
+	tracer        opentracing.Tracer
+	span          opentracing.Span
+	parentCtx     core.SpanContext
+	ctx           core.SpanContext
 	writer        http.ResponseWriter
 	headerWritten bool
 	traced        bool
-	status        int
 	lock          sync.Mutex
 }
 
@@ -155,8 +148,18 @@ func (i *responseInterceptor) trace(code int) {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 	if !i.headerWritten {
-		i.status = code
-		i.tracer.Inject(i.ctx, opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(i.writer.Header()))
+		i.span.SetTag(ext.HTTPStatusCodeKey, code)
+
+		if code >= 400 {
+			i.span.SetTag(ext.ErrorKey, true)
+		}
+
+		i.span.Finish()
+		i.tracer.Inject(
+			i.ctx,
+			core.HTTPHeaders,
+			core.HTTPHeadersCarrier(i.writer.Header()),
+		)
 		i.headerWritten = true
 	}
 }
@@ -167,30 +170,31 @@ func (i *responseInterceptor) WriteHeader(code int) {
 }
 
 func (i *responseInterceptor) Write(b []byte) (int, error) {
+	debug("Writing response body %s", string(b))
+	r, e := i.writer.Write(b)
+
 	if !i.headerWritten {
-		r, e := i.writer.Write(b)
 		i.trace(http.StatusOK)
-		return r, e
 	}
-	return 0, nil
+	return r, e
 }
 
 func (i *responseInterceptor) Header() http.Header {
 	return i.writer.Header()
 }
 
-// TracedHandler returns a http.Handler that is traced as an opentracing.Span
-func TracedHttpHandler(h http.Handler, options ...HttpOption) http.Handler {
+// TracedHTTPHandler returns a http.Handler that is traced as an opentracing.Span
+func TracedHTTPHandler(
+	h http.Handler,
+	interceptor ...TracedHTTPInterceptor,
+) http.Handler {
 	mux, muxFound := h.(*http.ServeMux)
-	opts := loadHttpOptions(options...)
 
 	fn := func(w http.ResponseWriter, r *http.Request) {
-		tracer := Global()
-		parentCtx, _ := tracer.Extract(
-			opentracing.HTTPHeaders,
-			opentracing.HTTPHeadersCarrier(r.Header))
+		tracer := opentracing.GlobalTracer()
+		parentCtx, _ := tracer.Extract(core.HTTPHeaders, core.HTTPHeadersCarrier(r.Header))
 
-		config := optioniallyIntercept(opts, r)
+		config := optioniallyInterceptHTTP(interceptor, r)
 
 		var op string
 		if config.OperationName != "" {
@@ -198,47 +202,49 @@ func TracedHttpHandler(h http.Handler, options ...HttpOption) http.Handler {
 		} else {
 			op = httpOperationName(mux, muxFound, r)
 		}
-		tags := map[string]interface{}{}
-		tags[ext.SpanKindKey] = ext.SpanKindServerValue
-		tags[ext.ComponentKey] = "ctrace.TracedHttpHandler"
-		tags[ext.HTTPRemoteAddrKey] = r.RemoteAddr
-		tags[ext.HTTPMethodKey] = r.Method
-		tags[ext.HTTPUrlKey] = r.URL.String()
-		tags[ext.HTTPUserAgentKey] = r.UserAgent()
+		opts := []opentracing.StartSpanOption{
+			ChildOf(parentCtx),
+			ext.SpanKindServer(),
+			ext.Component("ctrace.TracedHttpHandler"),
+			ext.HTTPRemoteAddr(r.RemoteAddr),
+			ext.HTTPMethod(r.Method),
+			ext.HTTPUrl(r.URL.String()),
+			ext.HTTPUserAgent(r.UserAgent()),
+		}
 
 		if config.OperationName != "" {
 			op = config.OperationName
 		}
-		for k, v := range config.Tags {
-			tags[k] = v
+		if len(config.Tags) > 0 {
+			opts = append(opts, config.Tags...)
 		}
-		so := opentracing.StartSpanOptions{
-			References: []opentracing.SpanReference{ChildOf(parentCtx)},
-			Tags:       tags,
-		}
-		span, ctx := startSpanWithOptionsFromContext(r.Context(), op, so)
+		debug("TracedHttpHandler: StartSpan(%s)", op)
+
+		span := tracer.StartSpan(op, opts...)
+		ctx := span.Context()
 
 		ri := responseInterceptor{
-			tracer:    tracer,
-			parentCtx: parentCtx.(SpanContext),
-			ctx:       ctx.(SpanContext),
-			writer:    w,
+			tracer: tracer,
+			span:   span,
+			ctx:    ctx.(core.SpanContext),
+			writer: w,
 		}
 
-		h.ServeHTTP(ri, r.WithContext(ctx))
-		span.SetTag(ext.HTTPStatusCodeKey, status)
-
-		if status >= 400 {
-			span.SetTag(ext.ErrorKey, true)
+		if parentCtx != nil {
+			ri.parentCtx = parentCtx.(core.SpanContext)
 		}
 
-		span.Finish()
+		debug("TracedHttpHandler: ServeHTTP(...)")
+		h.ServeHTTP(&ri, r.WithContext(ContextWithSpan(r.Context(), span)))
 	}
 
 	return http.HandlerFunc(fn)
 }
 
-// TracedHandlerFunc returns a http.HandlerFunc that is traced as an opentracing.Span
-func TracedHttpHandlerFunc(fn func(http.ResponseWriter, *http.Request), options ...HttpOption) http.HandlerFunc {
-	return TracedHttpHandler(http.HandlerFunc(fn), options...).ServeHTTP
+// TracedHTTPHandlerFunc returns a http.HandlerFunc that is traced as an opentracing.Span
+func TracedHTTPHandlerFunc(
+	fn func(http.ResponseWriter, *http.Request),
+	interceptor ...TracedHTTPInterceptor,
+) http.HandlerFunc {
+	return TracedHTTPHandler(http.HandlerFunc(fn), interceptor...).ServeHTTP
 }

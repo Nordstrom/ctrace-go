@@ -1,4 +1,4 @@
-package ctrace
+package core
 
 import (
 	"time"
@@ -39,6 +39,9 @@ func (enc *spanEncoder) Encode(osp opentracing.Span) []byte {
 	}
 
 	bytes = append(bytes, sp.prefix...)
+	if !sp.finish.IsZero() {
+		bytes = enc.encodeKeyInt(bytes, "finish", sp.finish.UnixNano()/1e3)
+	}
 	if sp.duration >= 0 {
 		bytes = enc.encodeKeyInt(bytes, "duration", sp.duration.Nanoseconds()/1e3)
 	}

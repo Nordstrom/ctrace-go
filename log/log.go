@@ -3,6 +3,33 @@ package log
 import "github.com/opentracing/opentracing-go/log"
 
 var (
+	// String adds a string-valued key:value pair to a Span.LogFields() record
+	String = log.String
+
+	// Bool adds a bool-valued key:value pair to a Span.LogFields() record
+	Bool = log.Bool
+
+	// Int adds an int-valued key:value pair to a Span.LogFields() record
+	Int = log.Int
+
+	// Int32 adds an int32-valued key:value pair to a Span.LogFields() record
+	Int32 = log.Int32
+
+	// Int64 adds an int64-valued key:value pair to a Span.LogFields() record
+	Int64 = log.Int64
+
+	// Uint32 adds a uint32-valued key:value pair to a Span.LogFields() record
+	Uint32 = log.Uint32
+
+	// Uint64 adds a uint64-valued key:value pair to a Span.LogFields() record
+	Uint64 = log.Uint64
+
+	// Float32 adds a float32-valued key:value pair to a Span.LogFields() record
+	Float32 = log.Float32
+
+	// Float64 adds a float64-valued key:value pair to a Span.LogFields() record
+	Float64 = log.Float64
+
 	// ErrorKind is the type or "kind" of an error (only for event="error" logs).
 	// E.g., "Exception", "OSError"
 	ErrorKind = stringLogName("error.kind")
@@ -30,12 +57,12 @@ var (
 
 func stringLogName(k string) func(string) log.Field {
 	return func(v string) log.Field {
-		return log.String(k, v)
+		return String(k, v)
 	}
 }
 
 func errorLogName(k string) func(error) log.Field {
 	return func(v error) log.Field {
-		return log.String(k, v.Error())
+		return String(k, v.Error())
 	}
 }

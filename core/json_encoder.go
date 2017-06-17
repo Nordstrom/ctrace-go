@@ -1,4 +1,4 @@
-package ctrace
+package core
 
 import (
 	"fmt"

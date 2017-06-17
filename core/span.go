@@ -1,4 +1,4 @@
-package ctrace
+package core
 
 import (
 	"fmt"
@@ -15,6 +15,7 @@ type SpanContext interface {
 	opentracing.SpanContext
 	TraceID() string
 	SpanID() string
+	BaggageItem(key string) string
 }
 
 // spanContext holds the basic Span metadata.
@@ -29,12 +30,32 @@ type spanContext struct {
 	baggage map[string]string // initialized on first use
 }
 
+// NewSpanContext creates a new SpanContext
+func NewSpanContext(
+	traceID uint64,
+	spanID uint64,
+	baggage map[string]string,
+) SpanContext {
+	return spanContext{
+		traceID: traceID,
+		spanID:  spanID,
+		baggage: baggage,
+	}
+}
+
 func (c spanContext) TraceID() string {
 	return fmt.Sprintf("%016x", c.traceID)
 }
 
 func (c spanContext) SpanID() string {
 	return fmt.Sprintf("%016x", c.spanID)
+}
+
+func (c spanContext) BaggageItem(key string) string {
+	if c.baggage == nil {
+		return ""
+	}
+	return c.baggage[key]
 }
 
 // ForeachBaggageItem belongs to the opentracing.SpanContext interface

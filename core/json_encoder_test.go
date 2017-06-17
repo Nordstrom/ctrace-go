@@ -1,4 +1,4 @@
-package ctrace
+package core
 
 import (
 	. "github.com/onsi/ginkgo"

@@ -3,8 +3,16 @@ package ctrace
 import (
 	"context"
 
+	clog "github.com/Nordstrom/ctrace-go/log"
 	opentracing "github.com/opentracing/opentracing-go"
+	"github.com/opentracing/opentracing-go/log"
 )
+
+// ChildOf returns a StartSpanOption pointing to a dependent parent span.
+// If sc == nil, the option has no effect.
+//
+// See ChildOfRef, SpanReference
+var ChildOf = opentracing.ChildOf
 
 // ContextWithSpan returns a new `context.Context` that holds a reference to
 // `span`'s SpanContext.
@@ -40,15 +48,51 @@ func StartSpanFromContext(ctx context.Context, operationName string, opts ...ope
 	return opentracing.StartSpanFromContext(ctx, operationName, opts...)
 }
 
-func startSpanWithOptionsFromContext(ctx context.Context, operationName string, opts opentracing.StartSpanOptions) (opentracing.Span, context.Context) {
-	var span opentracing.Span
-	tracer := Global()
-	if parentSpan := SpanFromContext(ctx); parentSpan != nil {
-		ref := ChildOf(parentSpan.Context())
-		opts.References = append(opts.References, ref)
-		span = tracer.StartSpanWithOptions(operationName, opts)
-	} else {
-		span = tracer.StartSpanWithOptions(operationName, opts)
+// LogInfo allows the logging of an Info Event based on the
+// current context.Context.  If a running span does not exist on the current
+// context, nothing is logged.
+func LogInfo(ctx context.Context, event string, fields ...log.Field) {
+	span := SpanFromContext(ctx)
+	if span == nil {
+		return
 	}
-	return span, ContextWithSpan(ctx, span)
+	f := []log.Field{
+		clog.Event(event),
+	}
+	f = append(f, fields...)
+	span.LogFields(f...)
+}
+
+// LogErrorMessage allows the logging of an Error with a Message based on the
+// current context.Context.  If a running span does not exist on the current
+// context, nothing is logged.
+func LogErrorMessage(ctx context.Context, message string, fields ...log.Field) {
+	span := SpanFromContext(ctx)
+	if span == nil {
+		return
+	}
+	f := []log.Field{
+		clog.Event("error"),
+		clog.ErrorKind("message"),
+		clog.Message(message),
+	}
+	f = append(f, fields...)
+	span.LogFields(f...)
+}
+
+// LogErrorObject allows the logging of an Error Object based on the
+// current context.Context.  If a running span does not exist on the current
+// context, nothing is logged.
+func LogErrorObject(ctx context.Context, e error, fields ...log.Field) {
+	span := SpanFromContext(ctx)
+	if span == nil {
+		return
+	}
+	f := []log.Field{
+		clog.Event("error"),
+		clog.ErrorKind("object"),
+		clog.ErrorObject(e),
+	}
+	f = append(f, fields...)
+	span.LogFields(f...)
 }

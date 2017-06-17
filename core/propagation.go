@@ -1,4 +1,4 @@
-package ctrace
+package core
 
 import (
 	"net/url"
@@ -6,6 +6,45 @@ import (
 	"strings"
 
 	opentracing "github.com/opentracing/opentracing-go"
+)
+
+const (
+	// HTTPHeaders represents SpanContexts as HTTP header string pairs.
+	//
+	// Unlike TextMap, the HTTPHeaders format requires that the keys and values
+	// be valid as HTTP headers as-is (i.e., character casing may be unstable
+	// and special characters are disallowed in keys, values should be
+	// URL-escaped, etc).
+	//
+	// For Tracer.Inject(): the carrier must be a `TextMapWriter`.
+	//
+	// For Tracer.Extract(): the carrier must be a `TextMapReader`.
+	//
+	// See HTTPHeaderCarrier for an implementation of both TextMapWriter
+	// and TextMapReader that defers to an http.Header instance for storage.
+	// For example, Inject():
+	//
+	//    carrier := ctrace.HTTPHeadersCarrier(httpReq.Header)
+	//    err := span.Tracer().Inject(
+	//        span, ctrace.HTTPHeaders, carrier)
+	//
+	// Or Extract():
+	//
+	//    carrier := ctrace.HTTPHeadersCarrier(httpReq.Header)
+	//    span, err := tracer.Extract(
+	//        ctrace.HTTPHeaders, carrier)
+	//
+	HTTPHeaders = opentracing.HTTPHeaders
+
+	// TextMap represents SpanContexts as key:value string pairs.
+	//
+	// Unlike HTTPHeaders, the TextMap format does not restrict the key or
+	// value character sets in any way.
+	//
+	// For Tracer.Inject(): the carrier must be a `TextMapWriter`.
+	//
+	// For Tracer.Extract(): the carrier must be a `TextMapReader`.
+	TextMap = opentracing.TextMap
 )
 
 // Injector is responsible for injecting SpanContext instances in a manner suitable
