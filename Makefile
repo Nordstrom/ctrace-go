@@ -5,7 +5,7 @@ HTTP_PROXY = ${http_proxy}
 HTTPS_PROXY = ${https_proxy}
 
 # Many Go tools take file globs or directories as arguments instead of packages.
-PKG_FILES ?= *.go http ext log demo
+PKG_FILES ?= *.go core ext log demo
 
 # The linting tools evolve with each Go version, so run them only on the latest
 # stable release.
