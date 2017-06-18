@@ -2,6 +2,7 @@ package core_test
 
 import (
 	"encoding/json"
+	"os"
 
 	"github.com/Nordstrom/ctrace-go/core"
 	. "github.com/onsi/ginkgo"
@@ -19,6 +20,10 @@ var _ = Describe("Span", func() {
 		sp  opentracing.Span
 		out map[string]interface{}
 	)
+
+	BeforeEach(func() {
+		os.Setenv("CTRACE_SERVICE_NAME", "")
+	})
 
 	Context("with Single-Event Mode", func() {
 		BeforeEach(func() {
