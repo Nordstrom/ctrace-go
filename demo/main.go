@@ -8,13 +8,12 @@ import (
 	"net/url"
 
 	ctrace "github.com/Nordstrom/ctrace-go"
-	chttp "github.com/Nordstrom/ctrace-go/http"
 	"github.com/Nordstrom/ctrace-go/log"
 	opentracing "github.com/opentracing/opentracing-go"
 )
 
 var httpClient = &http.Client{
-	Transport: chttp.NewTracedTransport(&http.Transport{}),
+	Transport: ctrace.TracedHTTPClientTransport(&http.Transport{}),
 }
 
 func send(ctx context.Context, u string, r string) ([]byte, error) {
@@ -68,7 +67,6 @@ func err(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	fmt.Println("Hello Gateway...")
-	opentracing.InitGlobalTracer(ctrace.New())
 
 	http.HandleFunc("/gw", gateway)
 	http.HandleFunc("/ok", ok)
@@ -76,7 +74,7 @@ func main() {
 	addr := ":80"
 	fmt.Printf("Listening at %v ...\n", addr)
 
-	e := http.ListenAndServe(addr, chttp.TracedHandler(http.DefaultServeMux))
+	e := http.ListenAndServe(addr, ctrace.TracedHTTPHandler(http.DefaultServeMux))
 	if e != nil {
 		panic(e)
 	}

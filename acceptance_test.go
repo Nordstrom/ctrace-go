@@ -14,10 +14,6 @@ import (
 	opentracing "github.com/opentracing/opentracing-go"
 )
 
-func lines(buf bytes.Buffer) []string {
-	return strings.Split(buf.String(), "\n")
-}
-
 var _ = Describe("Acceptance", func() {
 
 	var (
@@ -27,7 +23,7 @@ var _ = Describe("Acceptance", func() {
 
 	BeforeEach(func() {
 		buf.Reset()
-		tracer = ctrace.NewWithOptions(ctrace.TracerOptions{Writer: &buf, MultiEvent: true})
+		tracer = ctrace.Init(ctrace.TracerOptions{Writer: &buf, MultiEvent: true})
 	})
 
 	Describe("Parent and Child with Standard Tags", func() {

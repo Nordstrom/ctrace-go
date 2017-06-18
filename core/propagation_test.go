@@ -1,4 +1,4 @@
-package ctrace_test
+package core_test
 
 // func TestSpanPropagator(t *testing.T) {
 // 	const op = "test"

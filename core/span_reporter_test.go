@@ -1,11 +1,16 @@
-package ctrace
+package core
 
 import (
 	"bytes"
+	"strings"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
+
+func lines(buf bytes.Buffer) []string {
+	return strings.Split(buf.String(), "\n")
+}
 
 var _ = Describe("SpanReporter", func() {
 

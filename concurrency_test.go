@@ -1,9 +1,10 @@
-package ctrace
+package ctrace_test
 
 import (
 	"bytes"
 	"sync"
 
+	ctrace "github.com/Nordstrom/ctrace-go"
 	. "github.com/onsi/ginkgo"
 	opentracing "github.com/opentracing/opentracing-go"
 )
@@ -13,7 +14,7 @@ const op = "test"
 var _ = Describe("Concurrency", func() {
 	It("usage", func() {
 		var buf bytes.Buffer
-		trc := NewWithOptions(TracerOptions{
+		trc := ctrace.Init(ctrace.TracerOptions{
 			Writer: &buf,
 			DebugAssertSingleGoroutine: true,
 		})

@@ -1,30 +1,39 @@
-hash: 1b19039a38f80f66116f7dfee56af90ca573c78c0af7fa406ee79191b70179d3
-updated: 2017-05-08T13:40:52.075958441-07:00
+hash: 0272b9d9c919988827d27c4182b29475da9a999d0ed17dfefb850404a843ea52
+updated: 2017-06-16T08:06:43.661824152-07:00
 imports:
+- name: github.com/eawsy/aws-lambda-go-core
+  version: e26eed6aa244a3d45aa693816a9c5faf39390fcd
+  subpackages:
+  - service/lambda/runtime
+- name: github.com/eawsy/aws-lambda-go-event
+  version: a318481f661f091bafea408f9967cb1ac5bf8905
+  subpackages:
+  - service/lambda/runtime
+  - service/lambda/runtime/event/apigatewayproxyevt
 - name: github.com/felixge/httpsnoop
-  version: 287b56e9e314227d3113c7c6b434d31aec68089d
+  version: 1c94779cf9e8761ec6acd2a8a2596df5a0a14136
 - name: github.com/opentracing/opentracing-go
   version: 1949ddbfd147afd4d964a9f00b24eb291e0e7c38
   subpackages:
-  - ext
   - http
   - log
-  - mocktracer
+- name: github.com/tj/go-debug
+  version: ff4a55a20a86994118644bbddc6a216da193cc13
 - name: golang.org/x/net
-  version: f2499483f923065a842d38eb4c7f1927e6fc6e6d
+  version: ddf80d0970594e2e4cccf5a98861cad3d9eaa4cd
   subpackages:
   - context
 testImports:
 - name: github.com/axw/gocov
-  version: c77561ca0c0cb1ed5d4ce4a912a75f5532566422
+  version: 3a69a0d2a4ef1f263e2d92b041a69593d6964fe8
   subpackages:
   - gocov
 - name: github.com/golang/lint
-  version: b8599f7d71e7fead76b25aeb919c0e2558672f4a
+  version: c5fb716d6688a859aae56d26d3e6070808df29f7
   subpackages:
   - golint
 - name: github.com/mattn/goveralls
-  version: 9d621f6940639bf287ecbb6f585a2c26eeba3bbe
+  version: a2cbbd7cdce4f5e051016fedf639c64bb05ef031
 - name: github.com/onsi/ginkgo
   version: 77a8c1e5c40d6bb6c5eb4dd4bdce9763564f6298
   subpackages:
@@ -60,17 +69,17 @@ testImports:
   - matchers/support/goraph/util
   - types
 - name: github.com/pborman/uuid
-  version: a97ce2ca70fa5a848076093f05e639a89ca34d06
+  version: e790cca94e6cc75c7064b1332e63811d4aae1a53
 - name: github.com/stretchr/testify
   version: 69483b4bd14f5845b5a1e55bca19e954e827f1d0
   subpackages:
   - assert
 - name: golang.org/x/sys
-  version: 9ccfe848b9db8435a24c424abbc07a921adf1df5
+  version: fb4cac33e3196ff7f507ab9b2d2a44b0142f5b5a
   subpackages:
   - unix
 - name: golang.org/x/tools
-  version: f5a6ee1ea9f7b3a91e3e70dc1b9706886d0e0ae3
+  version: 34f7837286c0bd1ea0d50c06fbf585a7090dbd4e
   subpackages:
   - cover
 - name: gopkg.in/yaml.v2

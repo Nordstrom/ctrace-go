@@ -1,4 +1,4 @@
-package ctrace
+package core
 
 import (
 	"time"
@@ -39,6 +39,9 @@ func (enc *spanEncoder) Encode(osp opentracing.Span) []byte {
 	}
 
 	bytes = append(bytes, sp.prefix...)
+	if !sp.finish.IsZero() {
+		bytes = enc.encodeKeyInt(bytes, "finish", sp.finish.UnixNano()/1e3)
+	}
 	if sp.duration >= 0 {
 		bytes = enc.encodeKeyInt(bytes, "duration", sp.duration.Nanoseconds()/1e3)
 	}
@@ -55,8 +58,8 @@ func (enc *spanEncoder) encodePrefix(sp *span) {
 		sp.prefix = make([]byte, 0, 512)
 	}
 	sp.prefix = append(sp.prefix, '{')
-	sp.prefix = enc.encodeKeyID(sp.prefix, "traceId", sp.context.traceID)
-	sp.prefix = enc.encodeKeyID(sp.prefix, "spanId", sp.context.spanID)
+	sp.prefix = enc.encodeKeyString(sp.prefix, "traceId", sp.context.TraceID())
+	sp.prefix = enc.encodeKeyString(sp.prefix, "spanId", sp.context.SpanID())
 
 	if sp.parentID > 0 {
 		sp.prefix = enc.encodeKeyID(sp.prefix, "parentId", sp.parentID)

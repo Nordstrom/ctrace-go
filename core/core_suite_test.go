@@ -1,4 +1,4 @@
-package http_test
+package core_test
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestHttp(t *testing.T) {
+func TestCore(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Http Suite")
+	RunSpecs(t, "Core Suite")
 }

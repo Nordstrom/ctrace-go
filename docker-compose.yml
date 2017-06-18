@@ -4,7 +4,7 @@ networks:
     driver: bridge
 
 services:
-  gw-go:
+  gw:
     build:
       context: .
       args:
@@ -20,7 +20,7 @@ services:
       http_proxy: "${http_proxy}"
       https_proxy: "${https_proxy}"
 
-  hello-go:
+  hello:
     build:
       context: .
       args:

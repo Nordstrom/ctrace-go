@@ -1,9 +1,0 @@
-stat examples: no such file or directory
-vet: error walking tree: stat examples: no such file or directory
-vet: examples: open examples: no such file or directory
-vet: no files checked
-/bin/sh: golint: command not found
-/bin/sh: golint: command not found
-/bin/sh: golint: command not found
-/bin/sh: golint: command not found
-/bin/sh: golint: command not found

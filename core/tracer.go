@@ -1,4 +1,4 @@
-package ctrace
+package core
 
 import (
 	"io"
@@ -9,9 +9,21 @@ import (
 
 	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/log"
+	godebug "github.com/tj/go-debug"
 )
 
-// tracer Implements the `Tracer` interface.
+var (
+	debug = godebug.Debug("ctrace-core")
+)
+
+// Tracer is a simple, thin interface for Span creation and SpanContext
+// propagation.
+type Tracer interface {
+	opentracing.Tracer
+	StartSpanWithOptions(string, opentracing.StartSpanOptions) opentracing.Span
+}
+
+// Tracer Implements the `Tracer` interface.
 type tracer struct {
 	options TracerOptions
 	SpanReporter
@@ -78,12 +90,15 @@ type TracerOptions struct {
 }
 
 // New creates a default Tracer.
-func New() opentracing.Tracer {
-	return NewWithOptions(TracerOptions{})
+func New() Tracer {
+	return NewWithOptions(TracerOptions{
+		MultiEvent: true,
+		Writer:     nil,
+	})
 }
 
 // NewWithOptions creates a customized Tracer.
-func NewWithOptions(opts TracerOptions) opentracing.Tracer {
+func NewWithOptions(opts TracerOptions) Tracer {
 	if opts.Writer == nil {
 		opts.Writer = os.Stdout
 	}
@@ -110,10 +125,10 @@ func (t *tracer) StartSpan(
 	for _, o := range opts {
 		o.Apply(&sso)
 	}
-	return t.startSpanWithOptions(operationName, sso)
+	return t.StartSpanWithOptions(operationName, sso)
 }
 
-func (t *tracer) startSpanWithOptions(
+func (t *tracer) StartSpanWithOptions(
 	operationName string,
 	opts opentracing.StartSpanOptions,
 ) opentracing.Span {
@@ -149,6 +164,9 @@ func (t *tracer) startSpanWithOptions(
 	// TODO: would be nice if basictracer did something with all
 	// References, not just the first one.
 	for _, ref := range opts.References {
+		if ref.ReferencedContext == nil {
+			continue
+		}
 		refCtx := ref.ReferencedContext.(spanContext)
 		sp.context.traceID = refCtx.traceID
 		sp.context.spanID = t.randomID()

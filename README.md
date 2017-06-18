@@ -22,19 +22,29 @@ $ glide get github.com/Nordstrom/ctrace-go
 ## Usage
 Add instrumentation to the operations you want to track.  Most of this is done by middleware.
 
-### Singleton Initialization
-First initialize the Global Tracer Singleton as early as possible.
+### Initialization
+First import ctrace.
 
 ```go
 import (
 	ctrace "github.com/Nordstrom/ctrace-go"
-	opentracing "github.com/opentracing/opentracing-go"
 )
+```
 
+This initializes the global Tracer with default settings so you can call
+```go
+tracer := ctrace.Global()
+```
+
+If you need to initialize the global tracer with customizations you will need to
+call the following early in the code.  For example you can call it in main as follows.
+
+```go
 func main() {
-	opentracing.InitGlobalTracer(ctrace.New())
-
-	// ...
+	ctrace.Init(TracerOptions{
+		MultiEvent: true,
+		Writer:     fileWriter,
+	})
 }
 ```
 
@@ -45,9 +55,7 @@ To automatically instrument incoming HTTP Requests use the TracedHandler.
 import (
 	"net/http"
 
-	ctrace "github.com/Nordstrom/ctrace-go"
 	chttp "github.com/Nordstrom/ctrace-go/http"
-	opentracing "github.com/opentracing/opentracing-go"
 )
 
 func ok(w http.ResponseWriter, r *http.Request) {
@@ -57,7 +65,6 @@ func ok(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	opentracing.InitGlobalTracer(ctrace.New())
 	http.HandleFunc("/ok", ok)
 	http.ListenAndServe(":8004", chttp.TracedHandler(http.DefaultServeMux))
 }

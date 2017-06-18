@@ -1,9 +1,10 @@
-package ctrace
+package ctrace_test
 
 import (
 	"os"
 	"testing"
 
+	ctrace "github.com/Nordstrom/ctrace-go"
 	"github.com/Nordstrom/ctrace-go/ext"
 	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/log"
@@ -14,7 +15,7 @@ func BenchmarkParentChildLog(b *testing.B) {
 	if err != nil {
 		return
 	}
-	t := NewWithOptions(TracerOptions{Writer: f})
+	t := ctrace.Init(ctrace.TracerOptions{Writer: f})
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		parent := t.StartSpan("parent",
@@ -48,7 +49,7 @@ func BenchmarkParent(b *testing.B) {
 	if err != nil {
 		return
 	}
-	t := NewWithOptions(TracerOptions{Writer: f})
+	t := ctrace.Init(ctrace.TracerOptions{Writer: f})
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		parent := t.StartSpan("parent",
@@ -70,7 +71,7 @@ func BenchmarkChild(b *testing.B) {
 	if err != nil {
 		return
 	}
-	t := NewWithOptions(TracerOptions{Writer: f})
+	t := ctrace.Init(ctrace.TracerOptions{Writer: f})
 	b.ResetTimer()
 	parent := t.StartSpan("parent",
 		ext.SpanKindServer(),
@@ -104,7 +105,7 @@ func BenchmarkLog(b *testing.B) {
 	if err != nil {
 		return
 	}
-	t := NewWithOptions(TracerOptions{Writer: f})
+	t := ctrace.Init(ctrace.TracerOptions{Writer: f})
 	b.ResetTimer()
 	parent := t.StartSpan("parent",
 		ext.SpanKindServer(),
