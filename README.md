@@ -31,31 +31,22 @@ import (
 )
 ```
 
-This initializes the global Tracer with default settings so you can call
-```go
-tracer := ctrace.Global()
-```
+### Instrumentation
+The primary way to use ctrace-go is to hook in one or more of the auto-instrumentation
+decorators.  These are the decorators we currently support.
 
-If you need to initialize the global tracer with customizations you will need to
-call the following early in the code.  For example you can call it in main as follows.
+- **TracedHttpHandler** - this wraps the default serve mux to trace **Incoming HTTP Requests**.
+- **TracedHttpClientTransport** - this wraps the http.Transport for tracing **Outgoing HTTP Requests**.
+- **TracedAPIGwLambdaProxyHandler** - this wraps **AWS Gateway Lambda Proxy** handler using [AWS Lambda Go Shim](https://github.com/eawsy/aws-lambda-go-shim) to trace requests coming into an AWS Lambda from an API Gateway proxy event.
 
-```go
-func main() {
-	ctrace.Init(TracerOptions{
-		MultiEvent: true,
-		Writer:     fileWriter,
-	})
-}
-```
-
-### Instrument Incoming HTTP Requests
-To automatically instrument incoming HTTP Requests use the TracedHandler.
+### TracedHttpHandler
+To automatically instrument incoming HTTP Requests use the TracedHttpHandler.
 
 ```go
 import (
 	"net/http"
 
-	chttp "github.com/Nordstrom/ctrace-go/http"
+	ctrace "github.com/Nordstrom/ctrace-go"
 )
 
 func ok(w http.ResponseWriter, r *http.Request) {
@@ -66,38 +57,24 @@ func ok(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	http.HandleFunc("/ok", ok)
-	http.ListenAndServe(":8004", chttp.TracedHandler(http.DefaultServeMux))
+	http.ListenAndServe(":8004", ctrace.TracedHTTPHandler(http.DefaultServeMux))
 }
 
 ```
 
-### Log Events
-To log events within the context of the current Span, use span.LogFields.
-
-```go
-func hello(ctx context.Context, region string) string {
-	span := opentracing.SpanFromContext(ctx)
-
-	msg := fmt.Sprintf("Hello %v!", region)
-	span.LogFields(log.Event("generate-msg"), log.Message(msg))
-	return msg
-}
-
-```
-
-### Instrument Outgoing HTTP Requests
-To automatically instrument outgoing HTTP Requests use the ctrace http.Transport.
+### TracedHTTPClientTransport
+To automatically instrument outgoing HTTP Requests use the TracedHttpClientTransport.
 
 ```go
 import (
 	"context"
 	"net/http"
 
-	chttp "github.com/Nordstrom/ctrace-go/http"
+	ctrace "github.com/Nordstrom/ctrace-go"
 )
 
 var httpClient = &http.Client{
-	Transport: chttp.NewTracedTransport(&http.Transport{}),
+	Transport: ctrace.TracedHTTPClientTransport(&http.Transport{}),
 }
 
 func send(ctx context.Context, method string, url string, body io.Reader) (*http.Response, error) {
@@ -109,13 +86,58 @@ func send(ctx context.Context, method string, url string, body io.Reader) (*http
 }
 ```
 
-## Examples
-For an more complete example of ctrace instrumentation, take a look at (Examples).
+### TracedAPIGwLambdaProxyHandler
+To automatically instrument incoming API Gateway Lambda proxy requests use TracedAPIGwLambdaProxyHandler.
+
+```go
+import (
+	"github.com/eawsy/aws-lambda-go-core/service/lambda/runtime"
+	"github.com/eawsy/aws-lambda-go-event/service/lambda/runtime/event/apigatewayproxyevt"
+	ctrace "github.com/Nordstrom/ctrace-go"
+)
+
+handler := func(
+	ctx context.Context,
+	evt *apigatewayproxyevt.Event,
+	lambdaCtx *runtime.Context,
+) (interface{}, error) {
+  // ...
+}
+
+var TracedHandler = ctrace.TracedAPIGwLambdaProxyHandler(handler)
+
+```
+
+### Log Events
+To log events within the context of the current Span, use span.LogFields.
+
+```go
+import (
+	ctrace "github.com/Nordstrom/ctrace-go"
+	log "github.com/Nordstrom/ctrace-go/log"
+)
+
+func hello(ctx context.Context, region string) string {
+	msg := fmt.Sprintf("Hello %v!", region)
+	ctrace.LogInfo(ctx, "generate-msg", log.Message(message))
+	return msg
+}
+
+```
 
 ## Advanced Usage
 If middleware does not fully meet your needs, you can manually instrument spans
 operations of interest and adding log statements to capture useful data relevant
 to those operations.
+
+```go
+func main() {
+	ctrace.Init(TracerOptions{
+		MultiEvent: true,
+		Writer:     fileWriter,
+	})
+}
+```
 
 ### Creating a Span given an existing Go context.Context
 If you use `context.Context` in your application, OpenTracing's Go library will happily rely on it for Span propagation. To start a new (blocking child) `Span`, you can use `StartSpanFromContext`.
