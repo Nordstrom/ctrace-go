@@ -118,7 +118,7 @@ var _ = Describe("http", func() {
 					w.WriteHeader(200)
 				})
 
-				th := ctrace.TracedHTTPHandler(mux, nil)
+				th := ctrace.TracedHTTPHandler(mux)
 				srv = httptest.NewServer(th)
 			})
 
@@ -182,7 +182,12 @@ var _ = Describe("http", func() {
 					w.WriteHeader(200)
 				})
 				reg, _ := regexp.Compile(`(\/v1\/health)`)
-				th := ctrace.TracedHTTPHandler(mux, reg)
+
+				inter := func(r *http.Request) ctrace.SpanConfig {
+					return ctrace.ConfigSpan("", reg)
+				}
+
+				th := ctrace.TracedHTTPHandler(mux, inter)
 				srv = httptest.NewServer(th)
 			})
 
@@ -249,7 +254,7 @@ var _ = Describe("http", func() {
 					"/test/",
 					ctrace.TracedHTTPHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 						w.WriteHeader(200)
-					}), nil),
+					})),
 				)
 
 				srv = httptest.NewServer(mux)

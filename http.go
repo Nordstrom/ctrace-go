@@ -3,7 +3,6 @@ package ctrace
 import (
 	"io"
 	"net/http"
-	"regexp"
 	"sync"
 
 	"github.com/Nordstrom/ctrace-go/core"
@@ -187,17 +186,19 @@ func (i *responseInterceptor) Header() http.Header {
 // TracedHTTPHandler returns a http.Handler that is traced as an opentracing.Span
 func TracedHTTPHandler(
 	h http.Handler,
-	ignoredPaths *regexp.Regexp,
 	interceptor ...TracedHTTPInterceptor,
 ) http.Handler {
 	mux, muxFound := h.(*http.ServeMux)
-
 	fn := func(w http.ResponseWriter, r *http.Request) {
-		matched := false
-		if ignoredPaths != nil {
-			matched = ignoredPaths.MatchString(r.URL.String())
+		ignored := false
+		for _, v := range interceptor {
+			config := v(r)
+			if config.IgnoredPaths != nil {
+				ignored = config.IgnoredPaths.MatchString(r.URL.String())
+			}
 		}
-		if matched {
+
+		if ignored {
 			h.ServeHTTP(w, r)
 		} else {
 			tracer := opentracing.GlobalTracer()
@@ -256,5 +257,5 @@ func TracedHTTPHandlerFunc(
 	fn func(http.ResponseWriter, *http.Request),
 	interceptor ...TracedHTTPInterceptor,
 ) http.HandlerFunc {
-	return TracedHTTPHandler(http.HandlerFunc(fn), nil, interceptor...).ServeHTTP
+	return TracedHTTPHandler(http.HandlerFunc(fn), interceptor...).ServeHTTP
 }
