@@ -3,6 +3,7 @@ package ctrace
 import (
 	"io"
 	"net/http"
+	"regexp"
 	"sync"
 
 	"github.com/Nordstrom/ctrace-go/core"
@@ -186,56 +187,65 @@ func (i *responseInterceptor) Header() http.Header {
 // TracedHTTPHandler returns a http.Handler that is traced as an opentracing.Span
 func TracedHTTPHandler(
 	h http.Handler,
+	ignoredPaths *regexp.Regexp,
 	interceptor ...TracedHTTPInterceptor,
 ) http.Handler {
 	mux, muxFound := h.(*http.ServeMux)
 
 	fn := func(w http.ResponseWriter, r *http.Request) {
-		tracer := opentracing.GlobalTracer()
-		parentCtx, _ := tracer.Extract(core.HTTPHeaders, core.HTTPHeadersCarrier(r.Header))
-
-		config := optioniallyInterceptHTTP(interceptor, r)
-
-		var op string
-		if config.OperationName != "" {
-			op = config.OperationName
+		matched := false
+		if ignoredPaths != nil {
+			matched = ignoredPaths.MatchString(r.URL.String())
+		}
+		if matched {
+			h.ServeHTTP(w, r)
 		} else {
-			op = httpOperationName(mux, muxFound, r)
-		}
-		opts := []opentracing.StartSpanOption{
-			ChildOf(parentCtx),
-			ext.SpanKindServer(),
-			ext.Component("ctrace.TracedHttpHandler"),
-			ext.HTTPRemoteAddr(r.RemoteAddr),
-			ext.HTTPMethod(r.Method),
-			ext.HTTPUrl(r.URL.String()),
-			ext.HTTPUserAgent(r.UserAgent()),
-		}
+			tracer := opentracing.GlobalTracer()
+			parentCtx, _ := tracer.Extract(core.HTTPHeaders, core.HTTPHeadersCarrier(r.Header))
 
-		if config.OperationName != "" {
-			op = config.OperationName
-		}
-		if len(config.Tags) > 0 {
-			opts = append(opts, config.Tags...)
-		}
-		debug("TracedHttpHandler: StartSpan(%s)", op)
+			config := optioniallyInterceptHTTP(interceptor, r)
 
-		span := tracer.StartSpan(op, opts...)
-		ctx := span.Context()
+			var op string
+			if config.OperationName != "" {
+				op = config.OperationName
+			} else {
+				op = httpOperationName(mux, muxFound, r)
+			}
+			opts := []opentracing.StartSpanOption{
+				ChildOf(parentCtx),
+				ext.SpanKindServer(),
+				ext.Component("ctrace.TracedHttpHandler"),
+				ext.HTTPRemoteAddr(r.RemoteAddr),
+				ext.HTTPMethod(r.Method),
+				ext.HTTPUrl(r.URL.String()),
+				ext.HTTPUserAgent(r.UserAgent()),
+			}
 
-		ri := responseInterceptor{
-			tracer: tracer,
-			span:   span,
-			ctx:    ctx.(core.SpanContext),
-			writer: w,
+			if config.OperationName != "" {
+				op = config.OperationName
+			}
+			if len(config.Tags) > 0 {
+				opts = append(opts, config.Tags...)
+			}
+			debug("TracedHttpHandler: StartSpan(%s)", op)
+
+			span := tracer.StartSpan(op, opts...)
+			ctx := span.Context()
+
+			ri := responseInterceptor{
+				tracer: tracer,
+				span:   span,
+				ctx:    ctx.(core.SpanContext),
+				writer: w,
+			}
+
+			if parentCtx != nil {
+				ri.parentCtx = parentCtx.(core.SpanContext)
+			}
+
+			debug("TracedHttpHandler: ServeHTTP(...)")
+			h.ServeHTTP(&ri, r.WithContext(ContextWithSpan(r.Context(), span)))
 		}
-
-		if parentCtx != nil {
-			ri.parentCtx = parentCtx.(core.SpanContext)
-		}
-
-		debug("TracedHttpHandler: ServeHTTP(...)")
-		h.ServeHTTP(&ri, r.WithContext(ContextWithSpan(r.Context(), span)))
 	}
 
 	return http.HandlerFunc(fn)
@@ -246,5 +256,5 @@ func TracedHTTPHandlerFunc(
 	fn func(http.ResponseWriter, *http.Request),
 	interceptor ...TracedHTTPInterceptor,
 ) http.HandlerFunc {
-	return TracedHTTPHandler(http.HandlerFunc(fn), interceptor...).ServeHTTP
+	return TracedHTTPHandler(http.HandlerFunc(fn), nil, interceptor...).ServeHTTP
 }
