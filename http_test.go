@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"time"
 
 	ctrace "github.com/Nordstrom/ctrace-go"
@@ -149,6 +150,85 @@ var _ = Describe("http", func() {
 				Expect(tags["http.remote_addr"]).ShouldNot(BeEmpty())
 				Expect(tags["http.user_agent"]).To(Equal("Go-http-client/1.1"))
 				Expect(tags["http.status_code"]).To(Equal(float64(200)))
+			})
+
+			It("records error correctly", func() {
+				res, err := http.Get(srv.URL + "/test/error")
+
+				Expect(err).ShouldNot(HaveOccurred())
+				body, err := ioutil.ReadAll(res.Body)
+				Expect(err).ShouldNot(HaveOccurred())
+				Expect(string(body)).To(Equal("There was an error"))
+				Expect(res.StatusCode).To(Equal(400))
+
+				sp := buf.Spans()[0]
+				Expect(sp.Operation).To(Equal("GET:/test/error"))
+				tags := sp.Tags
+				Expect(tags["error"]).To(Equal(true))
+				Expect(tags["http.status_code"]).To(Equal(float64(400)))
+			})
+		})
+
+		Context("for ServeMux or ListenAndServe, ignored Paths", func() {
+			BeforeEach(func() {
+				mux.HandleFunc("/v1/health", func(w http.ResponseWriter, r *http.Request) {
+					w.WriteHeader(200)
+				})
+				mux.HandleFunc("/test/error", func(w http.ResponseWriter, r *http.Request) {
+					w.WriteHeader(400)
+					w.Write([]byte("There was an error"))
+				})
+				mux.HandleFunc("/test/", func(w http.ResponseWriter, r *http.Request) {
+					w.WriteHeader(200)
+				})
+				reg, _ := regexp.Compile(`(\/v1\/health)`)
+
+				inter := func(r *http.Request) ctrace.SpanConfig {
+					return ctrace.ConfigSpan("", reg)
+				}
+
+				th := ctrace.TracedHTTPHandler(mux, inter)
+				srv = httptest.NewServer(th)
+			})
+
+			AfterEach(func() {
+				srv.Close()
+			})
+
+			It("records success correctly", func() {
+				_, err := http.Get(srv.URL + "/test/foo")
+
+				Expect(err).ShouldNot(HaveOccurred())
+
+				sp := buf.Spans()[0]
+				Expect(sp.Operation).To(Equal("GET:/test/"))
+				Expect(sp.ParentID).To(BeEmpty())
+				Expect(sp.TraceID).ToNot(BeEmpty())
+				Expect(sp.SpanID).ToNot(BeEmpty())
+				Expect(sp.Start).To(BeNumerically(">=", start.UnixNano()/1000))
+				Expect(sp.Finish).To(BeNumerically(">=", sp.Start))
+				Expect(sp.Duration).To(BeNumerically(">=", sp.Finish-sp.Start-2))
+				Expect(sp.Duration).To(BeNumerically("<=", sp.Finish-sp.Start+2))
+
+				tags := sp.Tags
+
+				Expect(tags["span.kind"]).To(Equal("server"))
+				Expect(tags["component"]).To(Equal("ctrace.TracedHttpHandler"))
+				Expect(tags["http.url"]).To(Equal("/test/foo"))
+				Expect(tags["http.method"]).To(Equal("GET"))
+				Expect(tags["http.remote_addr"]).ShouldNot(BeEmpty())
+				Expect(tags["http.user_agent"]).To(Equal("Go-http-client/1.1"))
+				Expect(tags["http.status_code"]).To(Equal(float64(200)))
+			})
+
+			It("ignores health endpoints", func() {
+				_, err := http.Get(srv.URL + "/v1/health")
+
+				Expect(err).ShouldNot(HaveOccurred())
+
+				sp := buf.Spans()
+
+				Expect(len(sp)).To(Equal(0))
 			})
 
 			It("records error correctly", func() {

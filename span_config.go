@@ -1,6 +1,10 @@
 package ctrace
 
-import opentracing "github.com/opentracing/opentracing-go"
+import (
+	"regexp"
+
+	opentracing "github.com/opentracing/opentracing-go"
+)
 
 // SpanConfig is used by middleware interceptors to return custom OperationName
 // and Tags
@@ -8,6 +12,9 @@ import opentracing "github.com/opentracing/opentracing-go"
 type SpanConfig struct {
 	// OperationName is the custom operation name decided by interceptor
 	OperationName string
+
+	// IgnoredPaths are URL paths ignored by tracer (ex.. /health to be ignored as it is used by a load balancer)
+	Ignored *regexp.Regexp
 
 	// Tags are the custom start span options decided by interceptor.
 	Tags []opentracing.StartSpanOption
@@ -27,10 +34,12 @@ type SpanConfig struct {
 //     )
 func ConfigSpan(
 	operationName string,
+	ignored *regexp.Regexp,
 	tags ...opentracing.StartSpanOption,
 ) SpanConfig {
 	return SpanConfig{
 		OperationName: operationName,
+		Ignored:       ignored,
 		Tags:          tags,
 	}
 }

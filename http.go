@@ -189,8 +189,15 @@ func TracedHTTPHandler(
 	interceptor ...TracedHTTPInterceptor,
 ) http.Handler {
 	mux, muxFound := h.(*http.ServeMux)
-
 	fn := func(w http.ResponseWriter, r *http.Request) {
+		for _, v := range interceptor {
+			config := v(r)
+			if config.Ignored != nil && config.Ignored.MatchString(r.URL.String()) {
+				h.ServeHTTP(w, r)
+				return
+			}
+		}
+
 		tracer := opentracing.GlobalTracer()
 		parentCtx, _ := tracer.Extract(core.HTTPHeaders, core.HTTPHeadersCarrier(r.Header))
 
@@ -236,6 +243,7 @@ func TracedHTTPHandler(
 
 		debug("TracedHttpHandler: ServeHTTP(...)")
 		h.ServeHTTP(&ri, r.WithContext(ContextWithSpan(r.Context(), span)))
+
 	}
 
 	return http.HandlerFunc(fn)
