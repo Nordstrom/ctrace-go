@@ -53,6 +53,7 @@ var _ = Describe("TracedAPIGwLambdaProxyHandler", func() {
 			if evt.Path == "/intercept" {
 				return ctrace.ConfigSpan(
 					"newopname",
+					nil,
 					opentracing.Tag{Key: "mytag", Value: "myval"},
 					ext.HTTPMethod("POST"),
 				)
