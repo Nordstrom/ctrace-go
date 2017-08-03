@@ -14,7 +14,7 @@ type SpanConfig struct {
 	OperationName string
 
 	// IgnoredPaths are URL paths ignored by tracer (ex.. /health to be ignored as it is used by a load balancer)
-	IgnoredPaths *regexp.Regexp
+	Ignored *regexp.Regexp
 
 	// Tags are the custom start span options decided by interceptor.
 	Tags []opentracing.StartSpanOption
@@ -34,12 +34,12 @@ type SpanConfig struct {
 //     )
 func ConfigSpan(
 	operationName string,
-	ignoredPaths *regexp.Regexp,
+	ignored *regexp.Regexp,
 	tags ...opentracing.StartSpanOption,
 ) SpanConfig {
 	return SpanConfig{
 		OperationName: operationName,
-		IgnoredPaths:  ignoredPaths,
+		Ignored:       ignored,
 		Tags:          tags,
 	}
 }
