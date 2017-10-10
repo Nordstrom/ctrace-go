@@ -83,14 +83,14 @@ var _ = Describe("Span", func() {
 
 			Context("with parent", func() {
 				JustBeforeEach(func() {
-					sc := core.NewSpanContext(123, 456, nil)
+					sc := core.NewSpanContext("123", "456", nil)
 					buf.Reset()
 					sp = trc.StartSpan("x", opentracing.ChildOf(sc))
 				})
 				It("outputs Finish-Span", func() {
 					sp.Finish()
 					Ω(buf.Lines()[0]).Should(MatchRegexp(
-						`\{"traceId":"000000000000007b","spanId":"[0-9a-f]{16}","parentId":"00000000000001c8",` +
+						`\{"traceId":"123","spanId":"[0-9a-f]{16}","parentId":"456",` +
 							`"operation":"x","start":\d+,"finish":\d+,"duration":\d+,` +
 							`"logs":\[\{"timestamp":\d+,"event":"Start-Span"\},\{"timestamp":\d+,"event":"Finish-Span"\}\]\}`))
 				})
@@ -98,7 +98,7 @@ var _ = Describe("Span", func() {
 
 			Context("with parent and Baggage", func() {
 				JustBeforeEach(func() {
-					sc := core.NewSpanContext(123, 456, map[string]string{
+					sc := core.NewSpanContext("123", "456", map[string]string{
 						"btag1": "bval1",
 						"btag2": "bval2",
 					})
@@ -143,21 +143,21 @@ var _ = Describe("Span", func() {
 
 			Context("with parent", func() {
 				JustBeforeEach(func() {
-					sc := core.NewSpanContext(123, 456, nil)
+					sc := core.NewSpanContext("123", "456", nil)
 					buf.Reset()
 					sp = trc.StartSpan("x", opentracing.ChildOf(sc))
 				})
 				It("outputs string value", func() {
 					sp.LogFields(log.String("key_str", "value"))
 					Ω(buf.Lines()[1]).Should(MatchRegexp(
-						`\{"traceId":"000000000000007b","spanId":"[0-9a-f]{16}","parentId":"00000000000001c8",` +
+						`\{"traceId":"123","spanId":"[0-9a-f]{16}","parentId":"456",` +
 							`"operation":"x","start":\d+,"logs":\[\{"timestamp":\d+,"key_str":"value"\}\]\}`))
 				})
 			})
 
 			Context("with parent and Baggage", func() {
 				JustBeforeEach(func() {
-					sc := core.NewSpanContext(123, 456, map[string]string{
+					sc := core.NewSpanContext("123", "456", map[string]string{
 						"btag1": "bval1",
 						"btag2": "bval2",
 					})
@@ -224,21 +224,21 @@ var _ = Describe("Span", func() {
 
 			Context("with parent", func() {
 				JustBeforeEach(func() {
-					sc := core.NewSpanContext(123, 456, nil)
+					sc := core.NewSpanContext("123", "456", nil)
 					buf.Reset()
 					sp = trc.StartSpan("x", opentracing.ChildOf(sc))
 				})
 				It("outputs Finish-Span", func() {
 					sp.Finish()
 					Ω(buf.Lines()[1]).Should(MatchRegexp(
-						`\{"traceId":"000000000000007b","spanId":"[0-9a-f]{16}","parentId":"00000000000001c8",` +
+						`\{"traceId":"123","spanId":"[0-9a-f]{16}","parentId":"456",` +
 							`"operation":"x","start":\d+,"finish":\d+,"duration":\d+,"logs":\[\{"timestamp":\d+,"event":"Finish-Span"\}\]\}`))
 				})
 			})
 
 			Context("with parent and Baggage", func() {
 				JustBeforeEach(func() {
-					sc := core.NewSpanContext(123, 456, map[string]string{
+					sc := core.NewSpanContext("123", "456", map[string]string{
 						"btag1": "bval1",
 						"btag2": "bval2",
 					})

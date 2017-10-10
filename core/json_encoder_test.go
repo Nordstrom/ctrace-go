@@ -50,12 +50,12 @@ var _ = Describe("jsonEncoder", func() {
 
 	Describe("encodeKeyID", func() {
 		It("encodes id with padding", func() {
-			bytes = json.encodeKeyID(bytes, "mykey", 123)
+			bytes = json.encodeKeyID(bytes, "mykey", "000000000000007b")
 			Ω(string(bytes)).Should(Equal(`"mykey":"000000000000007b"`))
 		})
 
 		It("encodes id without padding", func() {
-			bytes = json.encodeKeyID(bytes, "mykey", 0x8a89382918382c7b)
+			bytes = json.encodeKeyID(bytes, "mykey", "8a89382918382c7b")
 			Ω(string(bytes)).Should(Equal(`"mykey":"8a89382918382c7b"`))
 		})
 	})

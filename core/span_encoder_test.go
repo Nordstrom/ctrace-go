@@ -25,27 +25,27 @@ var _ = Describe("SpanEncoder", func() {
 			sp := &span{
 				operation: "op",
 				context: spanContext{
-					traceID: 123,
-					spanID:  456,
+					traceID: "123",
+					spanID:  "456",
 				},
 				duration: -1,
 			}
 			bytes = enc.Encode(sp)
 			Ω(string(bytes)).Should(MatchRegexp(
-				`\{"traceId":"000000000000007b","spanId":"00000000000001c8","operation":"op","start":\d{16}\}`))
+				`\{"traceId":"123","spanId":"456","operation":"op","start":\d{16}\}`))
 		})
 
 		It("encodes full span", func() {
 			sp := &span{
 				operation: "op",
 				context: spanContext{
-					traceID: 123,
-					spanID:  456,
+					traceID: "123",
+					spanID:  "456",
 					baggage: map[string]string{
 						"bkey1": "bval1",
 					},
 				},
-				parentID: 789,
+				parentID: "789",
 				start:    time.Now(),
 				duration: 35000,
 				tags: map[string]interface{}{
@@ -63,7 +63,7 @@ var _ = Describe("SpanEncoder", func() {
 			}
 			bytes = enc.Encode(sp)
 			Ω(string(bytes)).Should(MatchRegexp(
-				`\{"traceId":"000000000000007b","spanId":"00000000000001c8","parentId":"0000000000000315",` +
+				`\{"traceId":"123","spanId":"456","parentId":"789",` +
 					`"operation":"op","start":\d{16},"duration":35,` +
 					`"tags":\{"key1":"val1"\},` +
 					`"baggage":\{"bkey1":"bval1"\},` +

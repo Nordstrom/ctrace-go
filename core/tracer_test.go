@@ -47,10 +47,10 @@ var _ = Describe("Tracer", func() {
 
 		Context("with ChildOf", func() {
 			It("outputs Start-Span", func() {
-				sc := core.NewSpanContext(123, 456, nil)
+				sc := core.NewSpanContext("123", "456", nil)
 				_ = trc.StartSpan("x", opentracing.ChildOf(sc))
 				Ω(buf.String()).Should(MatchRegexp(
-					`\{"traceId":"000000000000007b","spanId":"[0-9a-f]{16}","parentId":"00000000000001c8",` +
+					`\{"traceId":"123","spanId":"[0-9a-f]{16}","parentId":"456",` +
 						`"operation":"x","start":\d+,"logs":\[\{"timestamp":\d+,"event":"Start-Span"\}\]\}`))
 
 			})
@@ -58,7 +58,7 @@ var _ = Describe("Tracer", func() {
 
 		Context("with ChildOf and Baggage", func() {
 			It("outputs Start-Span Baggage", func() {
-				sc := core.NewSpanContext(123, 456,
+				sc := core.NewSpanContext("123", "456",
 					map[string]string{
 						"btag1": "bval1",
 						"btag2": "bval2",
@@ -145,7 +145,7 @@ var _ = Describe("Tracer", func() {
 			tracer opentracing.Tracer
 		)
 		JustBeforeEach(func() {
-			ctx = core.NewSpanContext(123, 245, map[string]string{
+			ctx = core.NewSpanContext("123", "245", map[string]string{
 				"bagitem1": "bagval1",
 				"bagitem2": "bagval2",
 			})
@@ -156,15 +156,15 @@ var _ = Describe("Tracer", func() {
 			It("injects HTTP Headers", func() {
 				hdrs := http.Header{}
 				tracer.Inject(ctx, opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(hdrs))
-				Ω(hdrs.Get("Ct-Span-Id")).Should(Equal("f5"))
-				Ω(hdrs.Get("Ct-Trace-Id")).Should(Equal("7b"))
+				Ω(hdrs.Get("Ct-Span-Id")).Should(Equal("245"))
+				Ω(hdrs.Get("Ct-Trace-Id")).Should(Equal("123"))
 			})
 
 			It("injects Text Map", func() {
 				txt := map[string]string{}
 				tracer.Inject(ctx, opentracing.TextMap, opentracing.TextMapCarrier(txt))
-				Ω(txt["ct-span-id"]).Should(Equal("f5"))
-				Ω(txt["ct-trace-id"]).Should(Equal("7b"))
+				Ω(txt["ct-span-id"]).Should(Equal("245"))
+				Ω(txt["ct-trace-id"]).Should(Equal("123"))
 			})
 		})
 
@@ -204,8 +204,8 @@ var _ = Describe("Tracer", func() {
 				Ω(err).ShouldNot(HaveOccurred())
 				ctx := c.(core.SpanContext)
 
-				Ω(ctx.TraceID()).Should(Equal("000000000000007b"))
-				Ω(ctx.SpanID()).Should(Equal("00000000000000f5"))
+				Ω(ctx.TraceID()).Should(Equal("7b"))
+				Ω(ctx.SpanID()).Should(Equal("f5"))
 			})
 		})
 

@@ -1,9 +1,11 @@
 package core
 
 import (
+	"fmt"
 	"io"
 	"math/rand"
 	"os"
+	"strconv"
 	"sync"
 	"time"
 
@@ -180,7 +182,7 @@ func (t *tracer) StartSpanWithOptions(
 		}
 		break
 	}
-	if sp.context.traceID == 0 {
+	if sp.context.traceID == "" {
 		// No parent Span found; allocate new trace and span ids and determine
 		// the Sampled status.
 		sp.context.traceID = t.randomID()
@@ -239,7 +241,8 @@ func (t *tracer) randomNumber() uint64 {
 
 // randomID generates a random trace/span ID, using tracer.random() generator.
 // It never returns 0.
-func (t *tracer) randomID() uint64 {
+func (t *tracer) randomID() string {
+	var result string
 	t.Lock()
 	defer t.Unlock()
 
@@ -247,5 +250,10 @@ func (t *tracer) randomID() uint64 {
 	for val == 0 {
 		val = t.randomNumber()
 	}
-	return val
+
+	result = strconv.FormatUint(val, 16)
+	if len(result) < 16 {
+		result = fmt.Sprintf("%016s", result)
+	}
+	return result
 }

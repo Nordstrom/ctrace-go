@@ -61,7 +61,7 @@ func (enc *spanEncoder) encodePrefix(sp *span) {
 	sp.prefix = enc.encodeKeyString(sp.prefix, "traceId", sp.context.TraceID())
 	sp.prefix = enc.encodeKeyString(sp.prefix, "spanId", sp.context.SpanID())
 
-	if sp.parentID > 0 {
+	if sp.parentID != "" {
 		sp.prefix = enc.encodeKeyID(sp.prefix, "parentId", sp.parentID)
 	}
 

@@ -56,10 +56,10 @@ func (enc *jsonEncoder) encodeKeyValue(bytes []byte, k string, v interface{}) []
 	return bytes
 }
 
-func (enc *jsonEncoder) encodeKeyID(bytes []byte, key string, id uint64) []byte {
+func (enc *jsonEncoder) encodeKeyID(bytes []byte, key string, id string) []byte {
 	bytes = enc.encodeKey(bytes, key)
 	bytes = append(bytes, '"')
-	bytes = enc.encodeString(bytes, fmt.Sprintf("%016x", id))
+	bytes = enc.encodeString(bytes, id)
 	bytes = append(bytes, '"')
 	return bytes
 }

@@ -1,7 +1,6 @@
 package core
 
 import (
-	"fmt"
 	"sync"
 	"time"
 
@@ -21,10 +20,10 @@ type SpanContext interface {
 // spanContext holds the basic Span metadata.
 type spanContext struct {
 	// A probabilistically unique identifier for a [multi-span] trace.
-	traceID uint64
+	traceID string
 
 	// A probabilistically unique identifier for a span.
-	spanID uint64
+	spanID string
 
 	// The span's associated baggage.
 	baggage map[string]string // initialized on first use
@@ -32,8 +31,8 @@ type spanContext struct {
 
 // NewSpanContext creates a new SpanContext
 func NewSpanContext(
-	traceID uint64,
-	spanID uint64,
+	traceID string,
+	spanID string,
 	baggage map[string]string,
 ) SpanContext {
 	return spanContext{
@@ -44,11 +43,11 @@ func NewSpanContext(
 }
 
 func (c spanContext) TraceID() string {
-	return fmt.Sprintf("%016x", c.traceID)
+	return c.traceID
 }
 
 func (c spanContext) SpanID() string {
-	return fmt.Sprintf("%016x", c.spanID)
+	return c.spanID
 }
 
 func (c spanContext) BaggageItem(key string) string {
@@ -100,7 +99,7 @@ type span struct {
 
 	// The SpanID of this SpanContext's first intra-trace reference (i.e.,
 	// "parent"), or 0 if there is no parent.
-	parentID uint64
+	parentID string
 
 	// The name of the "operation" this span is an instance of. (Called a "span
 	// name" in some implementations)

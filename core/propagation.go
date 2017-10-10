@@ -2,7 +2,6 @@ package core
 
 import (
 	"net/url"
-	"strconv"
 	"strings"
 
 	opentracing "github.com/opentracing/opentracing-go"
@@ -175,8 +174,8 @@ func (p *textMapPropagator) Inject(
 	}
 	// TODO: At this point we don't need to encode trace and span id values
 	// this may change
-	carrier.Set(p.traceIDKey, strconv.FormatUint(sc.traceID, 16))
-	carrier.Set(p.spanIDKey, strconv.FormatUint(sc.spanID, 16))
+	carrier.Set(p.traceIDKey, sc.traceID)
+	carrier.Set(p.spanIDKey, sc.spanID)
 
 	for k, v := range sc.baggage {
 		carrier.Set(p.baggagePrefix+p.encodeKey(k), p.encodeValue(v))
@@ -192,7 +191,7 @@ func (p *textMapPropagator) Extract(
 		return nil, opentracing.ErrInvalidCarrier
 	}
 	requiredFieldCount := 0
-	var traceID, spanID uint64
+	var traceID, spanID string
 	var err error
 
 	decodedBaggage := make(map[string]string)
@@ -200,15 +199,9 @@ func (p *textMapPropagator) Extract(
 		k = p.decodeKey(k)
 		switch k {
 		case p.traceIDKey:
-			traceID, err = strconv.ParseUint(v, 16, 64)
-			if err != nil {
-				return opentracing.ErrSpanContextCorrupted
-			}
+			traceID = v
 		case p.spanIDKey:
-			spanID, err = strconv.ParseUint(v, 16, 64)
-			if err != nil {
-				return opentracing.ErrSpanContextCorrupted
-			}
+			spanID = v
 		default:
 			if strings.HasPrefix(k, p.baggagePrefix) {
 				key := strings.TrimPrefix(k, p.baggagePrefix)
