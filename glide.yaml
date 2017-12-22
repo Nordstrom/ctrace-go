@@ -10,8 +10,6 @@ import:
   - service/lambda/runtime
   - service/lambda/runtime/event/apigatewayproxyevt
 - package: github.com/eawsy/aws-lambda-go-core
-- package: github.com/tj/go-debug
-  version: ^2.0.0
 testImport:
 - package: github.com/onsi/ginkgo
   version: ^1.2.0

@@ -9,11 +9,6 @@ import (
 
 	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/log"
-	godebug "github.com/tj/go-debug"
-)
-
-var (
-	debug = godebug.Debug("ctrace-core")
 )
 
 // Tracer is a simple, thin interface for Span creation and SpanContext

@@ -1,5 +1,5 @@
-hash: 0272b9d9c919988827d27c4182b29475da9a999d0ed17dfefb850404a843ea52
-updated: 2017-06-16T08:06:43.661824152-07:00
+hash: fe7f8689be0826395bf021f24709bc143b73a0f00f43628a37eab121ee287909
+updated: 2017-12-21T16:23:13.237417631-08:00
 imports:
 - name: github.com/eawsy/aws-lambda-go-core
   version: e26eed6aa244a3d45aa693816a9c5faf39390fcd
@@ -17,12 +17,13 @@ imports:
   subpackages:
   - http
   - log
-- name: github.com/tj/go-debug
-  version: ff4a55a20a86994118644bbddc6a216da193cc13
 - name: golang.org/x/net
   version: ddf80d0970594e2e4cccf5a98861cad3d9eaa4cd
   subpackages:
   - context
+  - html
+  - html/atom
+  - html/charset
 testImports:
 - name: github.com/axw/gocov
   version: 3a69a0d2a4ef1f263e2d92b041a69593d6964fe8
@@ -35,7 +36,7 @@ testImports:
 - name: github.com/mattn/goveralls
   version: a2cbbd7cdce4f5e051016fedf639c64bb05ef031
 - name: github.com/onsi/ginkgo
-  version: 77a8c1e5c40d6bb6c5eb4dd4bdce9763564f6298
+  version: 9eda700730cba42af70d53180f9dcce9266bc2bc
   subpackages:
   - config
   - internal/codelocation
@@ -55,7 +56,7 @@ testImports:
   - reporters/stenographer/support/go-isatty
   - types
 - name: github.com/onsi/gomega
-  version: 334b8f472b3af5d541c5642701c1e29e2126f486
+  version: c893efa28eb45626cdaa76c9f653b62488858837
   subpackages:
   - format
   - internal/assertion
@@ -78,6 +79,24 @@ testImports:
   version: fb4cac33e3196ff7f507ab9b2d2a44b0142f5b5a
   subpackages:
   - unix
+- name: golang.org/x/text
+  version: 825fc78a2fd6fa0a5447e300189e3219e05e1f25
+  subpackages:
+  - encoding
+  - encoding/charmap
+  - encoding/htmlindex
+  - encoding/internal
+  - encoding/internal/identifier
+  - encoding/japanese
+  - encoding/korean
+  - encoding/simplifiedchinese
+  - encoding/traditionalchinese
+  - encoding/unicode
+  - internal/tag
+  - internal/utf8internal
+  - language
+  - runes
+  - transform
 - name: golang.org/x/tools
   version: 34f7837286c0bd1ea0d50c06fbf585a7090dbd4e
   subpackages:

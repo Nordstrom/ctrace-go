@@ -42,7 +42,7 @@ type closeTracker struct {
 }
 
 func (c closeTracker) Close() error {
-	debug("Closing Response Writer...")
+	// debug("Closing Response Writer...")
 	err := c.ReadCloser.Close()
 	if err != nil {
 		c.sp.SetTag(ext.ErrorKey, true)
@@ -70,7 +70,7 @@ func (t *tracedHTTPClientTransport) RoundTrip(
 	r *http.Request,
 ) (*http.Response, error) {
 	op := r.Method + ":" + r.URL.Path
-	debug("Starting client RoundTrip: op=%s", op)
+	// debug("Starting client RoundTrip: op=%s", op)
 
 	config := optioniallyInterceptHTTP(t.interceptor, r)
 	opts := []opentracing.StartSpanOption{
@@ -170,7 +170,7 @@ func (i *responseInterceptor) WriteHeader(code int) {
 }
 
 func (i *responseInterceptor) Write(b []byte) (int, error) {
-	debug("Writing response body %s", string(b))
+	// debug("Writing response body %s", string(b))
 	r, e := i.writer.Write(b)
 
 	if !i.headerWritten {
@@ -225,7 +225,7 @@ func TracedHTTPHandler(
 		if len(config.Tags) > 0 {
 			opts = append(opts, config.Tags...)
 		}
-		debug("TracedHttpHandler: StartSpan(%s)", op)
+		// debug("TracedHttpHandler: StartSpan(%s)", op)
 
 		span := tracer.StartSpan(op, opts...)
 		ctx := span.Context()
@@ -241,7 +241,7 @@ func TracedHTTPHandler(
 			ri.parentCtx = parentCtx.(core.SpanContext)
 		}
 
-		debug("TracedHttpHandler: ServeHTTP(...)")
+		// debug("TracedHttpHandler: ServeHTTP(...)")
 		h.ServeHTTP(&ri, r.WithContext(ContextWithSpan(r.Context(), span)))
 
 	}

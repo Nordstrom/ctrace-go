@@ -3,7 +3,7 @@ package ctrace
 import (
 	"github.com/Nordstrom/ctrace-go/core"
 	opentracing "github.com/opentracing/opentracing-go"
-	godebug "github.com/tj/go-debug"
+	// godebug "github.com/tj/go-debug"
 )
 
 // TracerOptions allows creating a customized Tracer via NewWithOptions. The object
@@ -11,12 +11,12 @@ import (
 // of core.TracerOptions.
 type TracerOptions core.TracerOptions
 
-var (
-	debug = godebug.Debug("ctrace")
-)
+// var (
+// 	debug = godebug.Debug("ctrace")
+// )
 
 func init() {
-	debug("Initializing ctrace...") // start with empty line for testing
+	// debug("Initializing ctrace...") // start with empty line for testing
 	Init(TracerOptions{})
 }
 
