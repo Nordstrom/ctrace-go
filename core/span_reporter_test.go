@@ -29,22 +29,22 @@ var _ = Describe("SpanReporter", func() {
 			sp := &span{
 				operation: "op",
 				context: spanContext{
-					traceID: 123,
-					spanID:  456,
+					traceID: "123",
+					spanID:  "456",
 				},
 				duration: -1,
 			}
 			rep.Report(sp)
 			Ω(lines(buf)[0]).Should(MatchRegexp(
-				`\{"traceId":"000000000000007b","spanId":"00000000000001c8","operation":"op","start":\d{16}\}`))
+				`\{"traceId":"123","spanId":"456","operation":"op","start":\d{16}\}`))
 		})
 
 		It("reports two spans", func() {
 			sp := &span{
 				operation: "op",
 				context: spanContext{
-					traceID: 123,
-					spanID:  456,
+					traceID: "123",
+					spanID:  "456",
 				},
 				duration: -1,
 			}
@@ -52,9 +52,9 @@ var _ = Describe("SpanReporter", func() {
 			sp.duration = 35000
 			rep.Report(sp)
 			Ω(lines(buf)[0]).Should(MatchRegexp(
-				`\{"traceId":"000000000000007b","spanId":"00000000000001c8","operation":"op","start":\d{16}\}`))
+				`\{"traceId":"123","spanId":"456","operation":"op","start":\d{16}\}`))
 			Ω(lines(buf)[1]).Should(MatchRegexp(
-				`\{"traceId":"000000000000007b","spanId":"00000000000001c8","operation":"op","start":\d{16},"duration":35\}`))
+				`\{"traceId":"123","spanId":"456","operation":"op","start":\d{16},"duration":35\}`))
 		})
 	})
 })
